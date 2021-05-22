@@ -1,5 +1,8 @@
 import React, { Component } from "react";
+
 import { toast } from "react-toastify";
+import { io } from "socket.io-client";
+import { v4 as uuidv4 } from "uuid";
 
 import MsgItem from "../msgItem/msgItem";
 
@@ -7,57 +10,105 @@ import "./chat.css";
 
 class Chat extends Component {
 	state = {
-		imgPickerRef: undefined,
-		chatBoxRef: undefined,
-		inputBoxRef: undefined,
+		imgPickerRef: React.createRef(),
+		chatBoxRef: React.createRef(),
+		inputBoxRef: React.createRef(),
 		txtInput: "",
 		msgs: [],
+		socket: undefined,
+		clientId: undefined,
 	};
+
 	componentDidMount() {
-		toast.success("Loaded chat..!");
-		const imgPickerRef = React.createRef();
-		const chatBoxRef = React.createRef();
-		const inputBoxRef = React.createRef();
-		this.setState({ imgPickerRef, chatBoxRef, inputBoxRef }, () => {
-			inputBoxRef.current.focus();
-		});
+		this.state.inputBoxRef.current.focus();
+		this.setState({ clientId: uuidv4() });
+		this.socketInit();
 	}
+
+	componentWillUnmount() {
+		this.state.socket && this.state.socket.disconnect();
+	}
+
+	socketInit = () => {
+		console.log("env", process.env.NODE_ENV);
+		const socket =
+			process.env.NODE_ENV === "development"
+				? io("http://localhost:7500")
+				: io();
+
+		socket.on("connect", () => toast.success("Connected to server...!"));
+		socket.on("disconnect", () => toast.error("Disconnected from server"));
+
+		socket.on("msg-client", (msg) => {
+			console.log("Message from server", msg);
+			if (msg.id !== this.state.clientId) this.addItemToChat(msg, false);
+		});
+
+		this.setState({ socket });
+	};
+
 	handleTxtInput = (event) => {
 		this.setState({ txtInput: event.target.value });
 	};
+
 	handleEnter = ({ key }) => {
-		key === "Enter" && this.sendMessage();
+		key === "Enter" && this.sendTxtMsg();
 	};
-	pickImage = async () => {
+
+	sendImgMsg = async () => {
 		const imgPicker = this.state.imgPickerRef.current;
-		//console.log(imgPicker.value);
-		//const imgRef = this.state.imgRef.current;
+
 		const img = URL.createObjectURL(imgPicker.files[0]);
 		const blob = await fetch(img).then((r) => r.blob());
+
+		const msg = {
+			type: "image",
+			blob,
+			mime: blob.type,
+		};
+
+		this.sendMsgToServer(msg);
+		this.addItemToChat(msg);
+
 		imgPicker.value = "";
-		//console.log(img);
-		//console.log(blob);
-		//imgRef.src = URL.createObjectURL(blob);
-		const msg = { id: this.state.msgs.length, type: "image", blob };
-		this.addItem(msg);
 	};
-	addItem = (msg) => {
+
+	sendTxtMsg = () => {
+		const text = this.state.txtInput;
+		if (text === "") return;
+		const msg = {
+			type: "text",
+			text,
+		};
+		this.sendMsgToServer(msg);
+		this.addItemToChat(msg);
+		this.setState({ txtInput: "" });
+	};
+
+	addItemToChat = (msg, isMine = true) => {
 		const msgs = [...this.state.msgs];
+		msg.id = msgs.length;
+		msg.isMine = isMine;
+
+		if (!isMine && msg.type === "image") {
+			msg.blob = new Blob([msg.blob], { type: msg.mime });
+		}
+
 		msgs.push(msg);
 		this.setState({ msgs }, () => {
 			const chatBox = this.state.chatBoxRef.current;
 			chatBox.scrollTop = chatBox.scrollHeight - chatBox.clientHeight;
-			//chatBox.scrollIntoView();
 			this.state.inputBoxRef.current.focus();
 		});
 	};
-	sendMessage = () => {
-		const text = this.state.txtInput;
-		if (text === "") return;
-		const msg = { id: this.state.msgs.length, type: "text", text };
-		this.addItem(msg);
-		this.setState({ txtInput: "" });
+
+	sendMsgToServer = (msg) => {
+		msg.id = this.state.clientId;
+		const { socket } = this.state;
+		if (!socket) return toast.error("Could not send message..!");
+		socket.emit("msg-server", msg);
 	};
+
 	render() {
 		return (
 			<div className="chat-container">
@@ -72,7 +123,7 @@ class Chat extends Component {
 						style={{ display: "none" }}
 						accept="image/jpeg,image/png"
 						ref={this.state.imgPickerRef}
-						onChange={this.pickImage}
+						onChange={this.sendImgMsg}
 					/>
 					<button
 						onClick={() => this.state.imgPickerRef.current.click()}
@@ -88,7 +139,7 @@ class Chat extends Component {
 						onKeyUp={this.handleEnter}
 						value={this.state.txtInput}
 					/>
-					<button onClick={this.sendMessage}>Send</button>
+					<button onClick={this.sendTxtMsg}>Send</button>
 				</div>
 			</div>
 		);
