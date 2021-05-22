@@ -8,8 +8,12 @@ const io = require("socket.io")(http, {
 	},
 });
 
-app.get("/", (req, res) => {
-	res.send("Welcome to app");
+const path = require("path");
+
+app.use(express.static(path.join(__dirname, "./../build")));
+
+app.get("*", (req, res) => {
+	res.sendFile(path.join(__dirname, "./../build", "index.html"));
 });
 
 io.on("connection", (socket) => {
