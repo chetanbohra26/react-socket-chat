@@ -1,0 +1,28 @@
+.chat-container {
+	flex: 1 1 auto;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.chat-box {
+	flex: 1 1 auto;
+	padding: 1rem;
+	overflow-x: hidden;
+	overflow-y: scroll;
+	display: flex;
+	flex-direction: column;
+}
+
+.chat-input-container {
+	flex: 0 1 auto;
+	padding: 0.5rem;
+	display: flex;
+}
+
+.msg-input {
+	padding: 0.5rem;
+	flex: 1 1 auto;
+	margin-left: 0.5rem;
+	margin-right: 0.5rem;
+}

@@ -1,0 +1,13 @@
+.main-container {
+	display: flex;
+	height: 100vh;
+	flex-direction: column;
+}
+
+.main-content {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 auto;
+	background-color: rgb(196, 235, 196);
+	overflow-y: hidden;
+}

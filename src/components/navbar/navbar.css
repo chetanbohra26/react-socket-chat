@@ -1,0 +1,12 @@
+.nav-main {
+	margin: 0;
+	background-color: green;
+	flex: 0 1 auto;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.nav-item {
+	padding: 1rem;
+}
