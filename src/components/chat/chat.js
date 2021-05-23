@@ -3,6 +3,7 @@ import React, { Component } from "react";
 import { toast } from "react-toastify";
 import { io } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
+import Resizer from "react-image-file-resizer";
 
 import MsgItem from "../msgItem/msgItem";
 
@@ -30,7 +31,7 @@ class Chat extends Component {
 	}
 
 	socketInit = () => {
-		console.log("env", process.env.NODE_ENV);
+		//console.log("env", process.env.NODE_ENV);
 		const socket =
 			process.env.NODE_ENV === "development"
 				? io("http://localhost:7500")
@@ -56,9 +57,27 @@ class Chat extends Component {
 	};
 
 	sendImgMsg = async () => {
+		/*
 		const imgPicker = this.state.imgPickerRef.current;
 
 		const img = URL.createObjectURL(imgPicker.files[0]);
+		const blob = await fetch(img).then((r) => r.blob());
+
+		const msg = {
+			type: "image",
+			blob,
+			mime: blob.type,
+		};
+
+		this.sendMsgToServer(msg);
+		this.addItemToChat(msg);
+
+		imgPicker.value = "";
+		*/
+		const imgPicker = this.state.imgPickerRef.current;
+		const file = imgPicker.files[0];
+
+		const img = await this.resizeFile(file);
 		const blob = await fetch(img).then((r) => r.blob());
 
 		const msg = {
@@ -86,6 +105,7 @@ class Chat extends Component {
 	};
 
 	addItemToChat = (msg, isMine = true) => {
+		//console.log("Added item to chat");
 		const msgs = [...this.state.msgs];
 		msg.id = msgs.length;
 		msg.isMine = isMine;
@@ -103,10 +123,32 @@ class Chat extends Component {
 	};
 
 	sendMsgToServer = (msg) => {
+		//console.log("Sending data to server", msg);
 		msg.id = this.state.clientId;
 		const { socket } = this.state;
 		if (!socket) return toast.error("Could not send message..!");
 		socket.emit("msg-server", msg);
+		//console.log("Msg sent");
+	};
+
+	resizeFile = (file) => {
+		const ext = file.name.split(".")[1].toLowerCase();
+		console.log(ext);
+
+		return new Promise((resolve) => {
+			Resizer.imageFileResizer(
+				file,
+				ext === "png" ? 720 : 1080,
+				ext === "png" ? 720 : 1080,
+				ext === "png" ? "PNG" : "JPEG",
+				80,
+				0,
+				(uri) => {
+					resolve(uri);
+				},
+				"base64"
+			);
+		});
 	};
 
 	render() {
