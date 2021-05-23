@@ -1,6 +1,6 @@
 .nav-main {
 	margin: 0;
-	background-color: green;
+	background-color: #21094e;
 	flex: 0 1 auto;
 	display: flex;
 	align-items: center;
@@ -9,4 +9,5 @@
 
 .nav-item {
 	padding: 1rem;
+	color: #fff;
 }

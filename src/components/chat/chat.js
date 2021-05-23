@@ -169,8 +169,9 @@ class Chat extends Component {
 					/>
 					<button
 						onClick={() => this.state.imgPickerRef.current.click()}
+						className="chat-icon-btn"
 					>
-						Pick
+						<img src="img_pick.svg" alt="Pick" />
 					</button>
 					<input
 						type="text"
@@ -181,7 +182,9 @@ class Chat extends Component {
 						onKeyUp={this.handleEnter}
 						value={this.state.txtInput}
 					/>
-					<button onClick={this.sendTxtMsg}>Send</button>
+					<button onClick={this.sendTxtMsg}>
+						<img src="send_btn.svg" alt="Send" />
+					</button>
 				</div>
 			</div>
 		);

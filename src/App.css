@@ -8,6 +8,6 @@
 	display: flex;
 	flex-direction: column;
 	flex: 1 1 auto;
-	background-color: rgb(196, 235, 196);
+	background-color: #a5e1ad;
 	overflow-y: hidden;
 }

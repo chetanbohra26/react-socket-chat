@@ -5,20 +5,23 @@
 	max-width: 70%;
 	border-radius: 0.5rem;
 	border: 1px solid black;
-	background-color: rgb(151, 151, 151);
+	background-color: #511281;
+	color: #fff;
 	overflow-wrap: break-word;
 }
 
 .msg-item.right {
 	align-self: flex-end;
+	background-color: #4ca1a3;
+	color: #000;
 }
 
 .msg-item.image {
 	padding: 0;
-	border-radius: 0;
 }
 
 .msg-img {
 	display: block;
 	height: 10rem;
+	border-radius: 0.5rem;
 }
