@@ -2,11 +2,14 @@ const express = require("express");
 
 const app = express();
 const http = require("http").Server(app);
-const io = require("socket.io")(http, {
-	cors: {
-		origin: "*",
-	},
-});
+const io =
+	process.env.NODE_ENV === "production"
+		? require("socket.io")(http)
+		: require("socket.io")(http, {
+				cors: {
+					origin: "*",
+				},
+		  });
 
 const path = require("path");
 

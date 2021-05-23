@@ -5,8 +5,14 @@ import "./navbar.css";
 const Navbar = () => {
 	return (
 		<div className="nav-main">
-			<div className="nav-item">Bak Bak</div>
-			<div className="nav-item">LOL</div>
+			<div className="nav-item">
+				<b>Bak Bak</b>
+			</div>
+			<div className="nav-item">
+				<a href="http://www.github.com/chetanbohra26">
+					<img src="github.svg" alt="" />
+				</a>
+			</div>
 		</div>
 	);
 };
