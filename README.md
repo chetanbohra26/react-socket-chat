@@ -2,7 +2,7 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
-Desployed at: https://bak-bak.herokuapp.com/
+Deployed at: https://bak-bak.herokuapp.com/
 
 ## Available Scripts
 
