@@ -2,12 +2,12 @@
 	display: flex;
 	height: 100vh;
 	flex-direction: column;
+	background-color: var(--color-bg);
 }
 
 .main-content {
 	display: flex;
 	flex-direction: column;
 	flex: 1 1 auto;
-	background-color: #a5e1ad;
-	overflow-y: hidden;
+	overflow: hidden;
 }
