@@ -142,7 +142,7 @@ const Chat = () => {
 					onChange={sendImgMsg}
 				/>
 				<button
-					onClick={() => imgPickerRef.current.click()}
+					onClick={() => imgPickerRef.current?.click()}
 					className="chat-icon-btn"
 					title="Send image"
 				>
