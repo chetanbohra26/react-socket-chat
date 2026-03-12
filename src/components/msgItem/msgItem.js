@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useState, useEffect } from "react";
 
 import "./msgItem.css";
 
@@ -9,11 +9,18 @@ const formatTime = (ts) => {
 };
 
 const MsgItem = ({ item }) => {
-	const img = useMemo(
-		() => (item.type === "image" ? URL.createObjectURL(item.blob) : undefined),
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-		[item.id]
-	);
+	const [img, setImg] = useState(null);
+
+	useEffect(() => {
+		if (item.type !== "image") return;
+		const url = URL.createObjectURL(item.blob);
+		setImg(url);
+		return () => {
+			URL.revokeObjectURL(url);
+		};
+	// item.blob identity changes when a new Blob is created for each message
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [item.id]);
 
 	const avatarLabel = item.isMine ? "Me" : "U";
 
@@ -27,7 +34,7 @@ const MsgItem = ({ item }) => {
 					}`}
 				>
 					{item.type === "text" && item.text}
-					{item.type === "image" && (
+					{item.type === "image" && img && (
 						<img src={img} alt="shared" className="msg-img" />
 					)}
 				</div>

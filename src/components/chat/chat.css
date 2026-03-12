@@ -16,6 +16,8 @@
 	flex-direction: column;
 	gap: 0.25rem;
 	scroll-behavior: smooth;
+	scrollbar-width: thin;
+	scrollbar-color: var(--color-border) transparent;
 }
 
 .chat-box::-webkit-scrollbar {

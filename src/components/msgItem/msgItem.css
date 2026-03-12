@@ -43,7 +43,7 @@
 	border-radius: var(--radius-bubble);
 	background-color: var(--color-received);
 	color: var(--color-received-text);
-	word-break: break-word;
+	word-break: normal;
 	overflow-wrap: break-word;
 	font-size: 0.9375rem;
 	line-height: 1.45;

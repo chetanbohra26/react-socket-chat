@@ -9,13 +9,12 @@ import MsgItem from "../msgItem/msgItem";
 
 import "./chat.css";
 
-const clientId = uuidv4();
-
 const Chat = () => {
 	const [txtInput, setTxtInput] = useState("");
 	const [msgs, setMsgs] = useState([]);
 	const [socket, setSocket] = useState(null);
 
+	const clientIdRef = useRef(uuidv4());
 	const imgPickerRef = useRef(null);
 	const chatBoxRef = useRef(null);
 	const inputBoxRef = useRef(null);
@@ -33,7 +32,7 @@ const Chat = () => {
 				msg.blob = new Blob([msg.blob], { type: msg.mime });
 			}
 			msg.isMine = isMine;
-			msg.timestamp = Date.now();
+			if (msg.timestamp == null) msg.timestamp = Date.now();
 
 			setMsgs((prev) => {
 				const next = [...prev];
@@ -57,7 +56,7 @@ const Chat = () => {
 		sock.on("disconnect", () => toast.error("Disconnected from server"));
 
 		sock.on("msg-client", (msg) => {
-			if (msg.id !== clientId) addItemToChat(msg, false);
+			if (msg.id !== clientIdRef.current) addItemToChat(msg, false);
 		});
 
 		setSocket(sock);
@@ -69,13 +68,12 @@ const Chat = () => {
 
 	useEffect(() => {
 		scrollToBottom();
-		if (inputBoxRef.current) inputBoxRef.current.focus();
 	}, [msgs, scrollToBottom]);
 
 	const sendMsgToServer = useCallback(
 		(msg) => {
 			if (!socket) return toast.error("Could not send message!");
-			msg.id = clientId;
+			msg.id = clientIdRef.current;
 			socket.emit("msg-server", msg);
 		},
 		[socket]
@@ -88,6 +86,7 @@ const Chat = () => {
 		sendMsgToServer(msg);
 		addItemToChat(msg);
 		setTxtInput("");
+		inputBoxRef.current?.focus();
 	}, [txtInput, sendMsgToServer, addItemToChat]);
 
 	const handleEnter = useCallback(
@@ -123,6 +122,7 @@ const Chat = () => {
 		sendMsgToServer(msg);
 		addItemToChat(msg);
 		imgPicker.value = "";
+		inputBoxRef.current?.focus();
 	};
 
 	return (

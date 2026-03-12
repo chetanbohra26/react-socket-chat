@@ -15,7 +15,7 @@ const Navbar = () => {
 			</div>
 			<div className="nav-actions">
 				<a
-					href="http://www.github.com/chetanbohra26"
+					href="https://www.github.com/chetanbohra26"
 					className="nav-github-link"
 					target="_blank"
 					rel="noopener noreferrer"
