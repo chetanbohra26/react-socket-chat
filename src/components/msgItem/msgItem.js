@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import "./msgItem.css";
 
 const formatTime = (ts) => {
-	if (!ts) return "";
+	if (ts == null) return "";
 	const d = new Date(ts);
 	return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 };

@@ -70,24 +70,17 @@ const Chat = () => {
 		scrollToBottom();
 	}, [msgs, scrollToBottom]);
 
-	const sendMsgToServer = useCallback(
-		(msg) => {
-			if (!socket) return toast.error("Could not send message!");
-			msg.id = clientIdRef.current;
-			socket.emit("msg-server", msg);
-		},
-		[socket]
-	);
-
 	const sendTxtMsg = useCallback(() => {
 		const text = txtInput.trim();
 		if (!text) return;
+		if (!socket) return toast.error("Could not send message!");
 		const msg = { type: "text", text };
-		sendMsgToServer(msg);
+		msg.id = clientIdRef.current;
+		socket.emit("msg-server", msg);
 		addItemToChat(msg);
 		setTxtInput("");
 		inputBoxRef.current?.focus();
-	}, [txtInput, sendMsgToServer, addItemToChat]);
+	}, [txtInput, socket, addItemToChat]);
 
 	const handleEnter = useCallback(
 		({ key }) => {
@@ -113,13 +106,15 @@ const Chat = () => {
 	};
 
 	const sendImgMsg = async () => {
+		if (!socket) return toast.error("Could not send message!");
 		const imgPicker = imgPickerRef.current;
 		const file = imgPicker.files[0];
 		const img = await resizeFile(file);
 		const blob = await fetch(img).then((r) => r.blob());
 
 		const msg = { type: "image", blob, mime: blob.type };
-		sendMsgToServer(msg);
+		msg.id = clientIdRef.current;
+		socket.emit("msg-server", msg);
 		addItemToChat(msg);
 		imgPicker.value = "";
 		inputBoxRef.current?.focus();
