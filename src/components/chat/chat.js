@@ -117,7 +117,15 @@ const Chat = () => {
 			return;
 		}
 		try {
-			const file = imgPicker.files[0];
+			const file = imgPicker.files?.[0];
+			if (!file || file.size === 0) {
+				toast.error("Please select a valid image file.");
+				return;
+			}
+			if (!["image/jpeg", "image/png"].includes(file.type)) {
+				toast.error("Only JPEG and PNG images are supported.");
+				return;
+			}
 			const img = await resizeFile(file);
 			const blob = await fetch(img).then((r) => r.blob());
 
