@@ -147,7 +147,7 @@ const Chat = () => {
 				{msgs.length === 0 && (
 					<div className="chat-empty">
 						<div className="chat-empty-icon">💬</div>
-						<span className="chat-empty-text">Say hello to start chatting!</span>
+						<span className="chat-empty-text">Send a message to get started</span>
 					</div>
 				)}
 				{msgs.map((item) => (
