@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
 
 import "./msgItem.css";
@@ -12,6 +12,8 @@ const formatTime = (ts) => {
 const MsgItem = ({ item }) => {
 	const [img, setImg] = useState(null);
 	const [showModal, setShowModal] = useState(false);
+	const viewBtnRef = useRef(null);
+	const closeBtnRef = useRef(null);
 
 	useEffect(() => {
 		if (item.type !== "image" || !item.blob) return;
@@ -56,9 +58,13 @@ const MsgItem = ({ item }) => {
 
 	useEffect(() => {
 		if (!showModal) return;
+		closeBtnRef.current?.focus();
 		const onKeyDown = (e) => { if (e.key === "Escape") setShowModal(false); };
 		document.addEventListener("keydown", onKeyDown);
-		return () => document.removeEventListener("keydown", onKeyDown);
+		return () => {
+			document.removeEventListener("keydown", onKeyDown);
+			viewBtnRef.current?.focus();
+		};
 	}, [showModal]);
 
 	const avatarLabel = item.isMine ? "Me" : "U";
@@ -80,6 +86,7 @@ const MsgItem = ({ item }) => {
 								<button
 									type="button"
 									className="msg-img-btn"
+									ref={viewBtnRef}
 									onClick={() => setShowModal(true)}
 								>
 									View
@@ -106,6 +113,7 @@ const MsgItem = ({ item }) => {
 						<button
 							type="button"
 							className="msg-lightbox-close"
+							ref={closeBtnRef}
 							onClick={() => setShowModal(false)}
 							aria-label="Close"
 						>
