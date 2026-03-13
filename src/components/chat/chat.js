@@ -147,7 +147,7 @@ const Chat = () => {
 				{msgs.length === 0 && (
 					<div className="chat-empty">
 						<div className="chat-empty-icon">💬</div>
-						<span className="chat-empty-text">Say hello to start chatting!</span>
+						<span className="chat-empty-text">Send a message to get started</span>
 					</div>
 				)}
 				{msgs.map((item) => (
@@ -163,6 +163,7 @@ const Chat = () => {
 					onChange={sendImgMsg}
 				/>
 				<button
+					type="button"
 					onClick={() => imgPickerRef.current?.click()}
 					className="chat-icon-btn"
 					title="Send image"
@@ -180,7 +181,7 @@ const Chat = () => {
 						value={txtInput}
 					/>
 				</div>
-				<button onClick={sendTxtMsg} className="chat-send-btn" title="Send">
+				<button type="button" onClick={sendTxtMsg} className="chat-send-btn" title="Send">
 					<img src="send_btn.svg" alt="Send" />
 				</button>
 			</div>

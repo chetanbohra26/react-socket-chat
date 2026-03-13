@@ -66,6 +66,11 @@
 	box-shadow: none;
 }
 
+.msg-img-wrap {
+	display: flex;
+	flex-direction: column;
+}
+
 .msg-img {
 	display: block;
 	height: 11rem;
@@ -73,6 +78,125 @@
 	border-radius: var(--radius-bubble);
 	object-fit: cover;
 	box-shadow: var(--shadow-md);
+}
+
+.msg-img-actions {
+	display: flex;
+	gap: 0.4rem;
+	margin-top: 0.35rem;
+}
+
+.msg-img-btn {
+	flex: 1;
+	font-size: 0.75rem;
+	padding: 0.25rem 0;
+	border-radius: 1rem;
+	border: 1px solid var(--color-primary);
+	background: transparent;
+	color: var(--color-primary);
+	cursor: pointer;
+	font-weight: 500;
+	transition: background 0.15s, color 0.15s;
+	min-height: 2rem;
+}
+
+.msg-img-btn:hover {
+	background: var(--color-primary);
+	color: #fff;
+}
+
+.msg-img-btn:active {
+	opacity: 0.8;
+}
+
+.msg-img-btn:focus-visible {
+	outline: 2px solid var(--color-primary);
+	outline-offset: 2px;
+}
+
+.msg-img-btn:focus:not(:focus-visible) {
+	outline: none;
+}
+
+/* Lightbox */
+
+.msg-lightbox-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.88);
+	z-index: 1000;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 1rem;
+}
+
+.msg-lightbox-img {
+	max-width: 95vw;
+	max-height: 80vh;
+	object-fit: contain;
+	border-radius: 0.5rem;
+	box-shadow: 0 4px 32px rgba(0, 0, 0, 0.5);
+}
+
+.msg-lightbox-close {
+	position: absolute;
+	top: 0.75rem;
+	right: 0.75rem;
+	width: 2.75rem;
+	height: 2.75rem;
+	border-radius: 50%;
+	border: none;
+	background: rgba(255, 255, 255, 0.15);
+	color: #fff;
+	font-size: 1.5rem;
+	line-height: 1;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: background 0.15s;
+}
+
+.msg-lightbox-close:hover {
+	background: rgba(255, 255, 255, 0.3);
+}
+
+.msg-lightbox-close:focus-visible {
+	outline: 2px solid #fff;
+	outline-offset: 3px;
+}
+
+.msg-lightbox-close:focus:not(:focus-visible) {
+	outline: none;
+}
+
+.msg-lightbox-download {
+	margin-top: 1rem;
+	padding: 0.5rem 2rem;
+	border-radius: 2rem;
+	border: 1.5px solid #fff;
+	background: transparent;
+	color: #fff;
+	font-size: 0.875rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition: background 0.15s;
+	min-height: 2.75rem;
+}
+
+.msg-lightbox-download:hover {
+	background: rgba(255, 255, 255, 0.15);
+}
+
+.msg-lightbox-download:focus-visible {
+	outline: 2px solid #fff;
+	outline-offset: 3px;
+}
+
+.msg-lightbox-download:focus:not(:focus-visible) {
+	outline: none;
 }
 
 .msg-time {
