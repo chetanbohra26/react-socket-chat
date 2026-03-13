@@ -1,43 +1,24 @@
-:root {
-	--color-primary: #6366f1;
-	--color-primary-dark: #4f46e5;
-	--color-primary-light: #818cf8;
-	--color-bg: #f1f5f9;
-	--color-surface: #ffffff;
-	--color-header: #4f46e5;
-	--color-sent: #6366f1;
-	--color-sent-text: #ffffff;
-	--color-received: #ffffff;
-	--color-received-text: #1e293b;
-	--color-input-bg: #ffffff;
-	--color-border: #e2e8f0;
-	--color-text-muted: #94a3b8;
-	--color-online: #22c55e;
-	--radius-bubble: 1.25rem;
-	--shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-	--shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom scrollbar for chat feed */
+.chat-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.chat-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chat-scroll::-webkit-scrollbar-thumb {
+  background: #c7d2fe;
+  border-radius: 9999px;
 }
 
-*,
-*::before,
-*::after {
-	box-sizing: border-box;
+/* Status dot pulse animation */
+@keyframes status-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.4); }
 }
-
-html,
-body,
-#root {
-	height: 100%;
-	margin: 0;
-	padding: 0;
-}
-
-body {
-	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-		Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans",
-		"Helvetica Neue", sans-serif;
-	-webkit-font-smoothing: antialiased;
-	-moz-osx-font-smoothing: grayscale;
-	background-color: var(--color-bg);
-	color: var(--color-received-text);
+.status-pulse {
+  animation: status-pulse 2s ease-in-out infinite;
 }
