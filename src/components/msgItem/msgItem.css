@@ -109,6 +109,15 @@
 	opacity: 0.8;
 }
 
+.msg-img-btn:focus-visible {
+	outline: 2px solid var(--color-primary);
+	outline-offset: 2px;
+}
+
+.msg-img-btn:focus:not(:focus-visible) {
+	outline: none;
+}
+
 /* Lightbox */
 
 .msg-lightbox-overlay {
@@ -154,6 +163,15 @@
 	background: rgba(255, 255, 255, 0.3);
 }
 
+.msg-lightbox-close:focus-visible {
+	outline: 2px solid #fff;
+	outline-offset: 3px;
+}
+
+.msg-lightbox-close:focus:not(:focus-visible) {
+	outline: none;
+}
+
 .msg-lightbox-download {
 	margin-top: 1rem;
 	padding: 0.5rem 2rem;
@@ -170,6 +188,15 @@
 
 .msg-lightbox-download:hover {
 	background: rgba(255, 255, 255, 0.15);
+}
+
+.msg-lightbox-download:focus-visible {
+	outline: 2px solid #fff;
+	outline-offset: 3px;
+}
+
+.msg-lightbox-download:focus:not(:focus-visible) {
+	outline: none;
 }
 
 .msg-time {

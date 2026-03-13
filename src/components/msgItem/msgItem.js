@@ -24,7 +24,8 @@ const MsgItem = ({ item }) => {
 	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [item.id]);
 
-	const ext = item.mime === "image/png" ? "png" : "jpg";
+	const mimeToExt = { "image/png": "png", "image/jpeg": "jpg", "image/jpg": "jpg", "image/gif": "gif", "image/webp": "webp", "image/svg+xml": "svg" };
+	const ext = mimeToExt[item.mime] ?? (item.mime?.split("/")[1]?.replace(/[^a-z0-9]/g, "") || "bin");
 	const filename = `image-${item.id}.${ext}`;
 
 	const handleDownload = () => {
@@ -40,11 +41,19 @@ const MsgItem = ({ item }) => {
 	};
 
 	const fallbackDownload = () => {
+		if (!img) return;
 		const a = document.createElement("a");
 		a.href = img;
 		a.download = filename;
 		a.click();
 	};
+
+	useEffect(() => {
+		if (!showModal) return;
+		const onKeyDown = (e) => { if (e.key === "Escape") setShowModal(false); };
+		document.addEventListener("keydown", onKeyDown);
+		return () => document.removeEventListener("keydown", onKeyDown);
+	}, [showModal]);
 
 	const avatarLabel = item.isMine ? "Me" : "U";
 
