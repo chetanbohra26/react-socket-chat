@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
 
-import "./msgItem.css";
-
 const formatTime = (ts) => {
 	if (ts == null) return "";
 	const d = new Date(ts);
@@ -37,7 +35,6 @@ const MsgItem = ({ item }) => {
 	const filename = `image-${item.id}.${ext}`;
 
 	const handleDownload = () => {
-		// Use Web Share API on mobile (iOS 15+, modern Android)
 		if (navigator.canShare) {
 			const file = new File([item.blob], filename, { type: item.blob.type });
 			if (navigator.canShare({ files: [file] })) {
@@ -67,44 +64,65 @@ const MsgItem = ({ item }) => {
 		};
 	}, [showModal]);
 
-	const avatarLabel = item.isMine ? "Me" : "U";
+	const isMine = item.isMine;
+	const avatarLabel = isMine ? "Me" : "U";
 
 	return (
-		<div className={`msg-row${item.isMine ? " mine" : ""}`}>
-			<div className="msg-avatar">{avatarLabel}</div>
-			<div className="msg-bubble-wrap">
-				<div
-					className={`msg-item${item.isMine ? " mine" : ""}${
-						item.type === "image" ? " image" : ""
-					}`}
-				>
-					{item.type === "text" && item.text}
-					{item.type === "image" && img && (
-						<div className="msg-img-wrap">
-							<img src={img} alt="shared" className="msg-img" />
-							<div className="msg-img-actions">
-								<button
-									type="button"
-									className="msg-img-btn"
-									ref={viewBtnRef}
-									onClick={() => setShowModal(true)}
-								>
-									View
-								</button>
-								<button type="button" className="msg-img-btn" onClick={handleDownload}>
-									Download
-								</button>
-							</div>
-						</div>
-					)}
-				</div>
-				<span className="msg-time">{formatTime(item.timestamp)}</span>
+		<div className={`flex items-end gap-2 mb-1 ${isMine ? "flex-row-reverse" : ""}`}>
+			{/* Avatar */}
+			<div className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-[0.65rem] font-bold flex-shrink-0 ${isMine ? "bg-indigo-500" : "bg-indigo-300"}`}>
+				{avatarLabel}
 			</div>
 
+			{/* Bubble + timestamp */}
+			<div className={`flex flex-col max-w-[70%] ${isMine ? "items-end" : "items-start"}`}>
+				{item.type === "text" && (
+					<div className={`px-3 py-2 rounded-2xl text-sm leading-relaxed shadow-sm break-words ${
+						isMine
+							? "bg-indigo-500 text-white rounded-br-[4px]"
+							: "bg-white text-slate-800 rounded-bl-[4px]"
+					}`}>
+						{item.text}
+					</div>
+				)}
+
+				{item.type === "image" && img && (
+					<div className="flex flex-col">
+						<img
+							src={img}
+							alt="shared"
+							className="h-44 max-w-full rounded-2xl object-cover shadow-md"
+						/>
+						<div className="flex gap-1.5 mt-1.5">
+							<button
+								type="button"
+								ref={viewBtnRef}
+								onClick={() => setShowModal(true)}
+								className="flex-1 text-xs font-medium bg-indigo-500 hover:bg-indigo-400 active:opacity-75 text-white rounded-full py-1 min-h-[2rem] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500 focus-visible:outline-offset-2"
+							>
+								View
+							</button>
+							<button
+								type="button"
+								onClick={handleDownload}
+								className="flex-1 text-xs font-medium bg-indigo-500 hover:bg-indigo-400 active:opacity-75 text-white rounded-full py-1 min-h-[2rem] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500 focus-visible:outline-offset-2"
+							>
+								Download
+							</button>
+						</div>
+					</div>
+				)}
+
+				<span className={`text-[0.6875rem] text-slate-400 mt-0.5 px-1 ${isMine ? "text-right" : ""}`}>
+					{formatTime(item.timestamp)}
+				</span>
+			</div>
+
+			{/* Lightbox */}
 			{showModal &&
 				ReactDOM.createPortal(
 					<div
-						className="msg-lightbox-overlay"
+						className="fixed inset-0 bg-black/85 z-50 flex flex-col items-center justify-center p-4"
 						role="dialog"
 						aria-modal="true"
 						aria-label="Image viewer"
@@ -112,26 +130,26 @@ const MsgItem = ({ item }) => {
 					>
 						<button
 							type="button"
-							className="msg-lightbox-close"
 							ref={closeBtnRef}
 							onClick={() => setShowModal(false)}
 							aria-label="Close"
+							className="absolute top-3 right-3 w-11 h-11 rounded-full bg-white/15 hover:bg-white/30 text-white text-2xl flex items-center justify-center transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-white focus-visible:outline-offset-3"
 						>
 							&times;
 						</button>
 						<img
 							src={img}
 							alt="shared full size"
-							className="msg-lightbox-img"
+							className="max-w-[95vw] max-h-[80vh] object-contain rounded-lg shadow-2xl"
 							onClick={(e) => e.stopPropagation()}
 						/>
 						<button
 							type="button"
-							className="msg-lightbox-download"
 							onClick={(e) => {
 								e.stopPropagation();
 								handleDownload();
 							}}
+							className="mt-4 px-8 py-2.5 rounded-full border-2 border-white bg-transparent text-white text-sm font-medium hover:bg-white/15 transition min-h-[2.75rem] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white focus-visible:outline-offset-3"
 						>
 							Download
 						</button>

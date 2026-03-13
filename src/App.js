@@ -6,14 +6,13 @@ import Chat from "./components/chat/chat";
 import { ToastContainer } from "react-toastify";
 
 import "react-toastify/dist/ReactToastify.min.css";
-import "./App.css";
 
 const App = () => {
 	return (
-		<div className="main-container">
+		<div className="flex flex-col h-screen bg-slate-100">
 			<ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
 			<Navbar />
-			<div className="main-content">
+			<div className="flex flex-1 overflow-hidden">
 				<Chat />
 			</div>
 		</div>

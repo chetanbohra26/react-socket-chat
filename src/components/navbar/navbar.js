@@ -1,27 +1,28 @@
-import "./navbar.css";
-
 const Navbar = () => {
 	return (
-		<div className="nav-main">
-			<div className="nav-brand">
-				<div className="nav-brand-icon">💬</div>
-				<span className="nav-brand-title">Bak Bak</span>
+		<nav className="flex items-center justify-between px-4 py-3 bg-indigo-600 shadow-md">
+			<div className="flex items-center gap-2">
+				<div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-lg">
+					💬
+				</div>
+				<span className="text-white font-semibold text-lg tracking-tight">Bak Bak</span>
 			</div>
-			<div className="nav-status">
-				<div className="nav-status-dot" />
-				<span>Online</span>
+
+			<div className="flex items-center gap-1.5">
+				<span className="w-2 h-2 rounded-full bg-green-400 status-pulse" />
+				<span className="text-indigo-100 text-sm font-medium">Online</span>
 			</div>
-			<div className="nav-actions">
-				<a
-					href="https://www.github.com/chetanbohra26"
-					className="nav-github-link"
-					target="_blank"
-					rel="noopener noreferrer"
-				>
-					<img src="github.svg" alt="GitHub" />
-				</a>
-			</div>
-		</div>
+
+			<a
+				href="https://www.github.com/chetanbohra26"
+				target="_blank"
+				rel="noopener noreferrer"
+				className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center transition"
+				title="GitHub"
+			>
+				<img src="github.svg" alt="GitHub" className="w-4 h-4 invert" />
+			</a>
+		</nav>
 	);
 };
 

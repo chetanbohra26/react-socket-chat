@@ -7,8 +7,6 @@ import Resizer from "react-image-file-resizer";
 
 import MsgItem from "../msgItem/msgItem";
 
-import "./chat.css";
-
 const Chat = () => {
 	const [txtInput, setTxtInput] = useState("");
 	const [msgs, setMsgs] = useState([]);
@@ -142,19 +140,25 @@ const Chat = () => {
 	};
 
 	return (
-		<div className="chat-container">
-			<div className="chat-box" ref={chatBoxRef}>
+		<div className="flex flex-col flex-1 overflow-hidden bg-slate-100">
+			{/* Message feed */}
+			<div
+				className="flex-1 overflow-y-auto px-4 py-4 space-y-1 chat-scroll"
+				ref={chatBoxRef}
+			>
 				{msgs.length === 0 && (
-					<div className="chat-empty">
-						<div className="chat-empty-icon">💬</div>
-						<span className="chat-empty-text">Send a message to get started</span>
+					<div className="flex flex-col items-center justify-center h-full gap-2 text-slate-400 select-none">
+						<span className="text-4xl">💬</span>
+						<span className="text-sm font-medium">Send a message to get started</span>
 					</div>
 				)}
 				{msgs.map((item) => (
 					<MsgItem item={item} key={item.id} />
 				))}
 			</div>
-			<div className="chat-input-container">
+
+			{/* Input bar */}
+			<div className="flex items-center gap-2 px-3 py-2.5 bg-white border-t border-slate-200 shadow-sm">
 				<input
 					type="file"
 					style={{ display: "none" }}
@@ -165,24 +169,29 @@ const Chat = () => {
 				<button
 					type="button"
 					onClick={() => imgPickerRef.current?.click()}
-					className="chat-icon-btn"
+					className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 transition flex-shrink-0"
 					title="Send image"
 				>
-					<img src="img_pick.svg" alt="Pick" />
+					<img src="img_pick.svg" alt="Pick" className="w-5 h-5" />
 				</button>
-				<div className="msg-input-wrapper">
-					<input
-						type="text"
-						className="msg-input"
-						placeholder="Type a message..."
-						ref={inputBoxRef}
-						onChange={(e) => setTxtInput(e.target.value)}
-						onKeyDown={handleEnter}
-						value={txtInput}
-					/>
-				</div>
-				<button type="button" onClick={sendTxtMsg} className="chat-send-btn" title="Send">
-					<img src="send_btn.svg" alt="Send" />
+
+				<input
+					type="text"
+					className="flex-1 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition"
+					placeholder="Type a message..."
+					ref={inputBoxRef}
+					onChange={(e) => setTxtInput(e.target.value)}
+					onKeyDown={handleEnter}
+					value={txtInput}
+				/>
+
+				<button
+					type="button"
+					onClick={sendTxtMsg}
+					className="w-9 h-9 rounded-full bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 flex items-center justify-center transition flex-shrink-0 shadow-sm"
+					title="Send"
+				>
+					<img src="send_btn.svg" alt="Send" className="w-4 h-4" />
 				</button>
 			</div>
 		</div>
