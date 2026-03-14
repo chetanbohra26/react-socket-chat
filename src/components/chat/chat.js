@@ -7,7 +7,7 @@ import Resizer from "react-image-file-resizer";
 
 import MsgItem from "../msgItem/msgItem";
 
-const Chat = () => {
+const Chat = ({ setIsOnline }) => {
 	const [txtInput, setTxtInput] = useState("");
 	const [msgs, setMsgs] = useState([]);
 	const [socket, setSocket] = useState(null);
@@ -50,8 +50,8 @@ const Chat = () => {
 				? io("http://localhost:7500")
 				: io();
 
-		sock.on("connect", () => toast.success("Connected to server!"));
-		sock.on("disconnect", () => toast.error("Disconnected from server"));
+		sock.on("connect", () => { setIsOnline(true); toast.success("Connected to server!"); });
+		sock.on("disconnect", () => { setIsOnline(false); toast.error("Disconnected from server"); });
 
 		sock.on("msg-client", (msg) => {
 			if (msg.id !== clientIdRef.current) addItemToChat(msg, false);

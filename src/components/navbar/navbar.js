@@ -1,4 +1,4 @@
-const Navbar = () => {
+const Navbar = ({ isOnline }) => {
 	return (
 		<nav className="flex items-center justify-between px-4 py-3 bg-indigo-600 shadow-md">
 			<div className="flex items-center gap-2">
@@ -9,8 +9,8 @@ const Navbar = () => {
 			</div>
 
 			<div className="flex items-center gap-1.5">
-				<span className="w-2 h-2 rounded-full bg-green-400 status-pulse" />
-				<span className="text-indigo-100 text-sm font-medium">Online</span>
+				<span className={`w-2 h-2 rounded-full ${isOnline ? "bg-green-400 status-pulse" : "bg-slate-400"}`} />
+				<span className="text-indigo-100 text-sm font-medium">{isOnline ? "Online" : "Offline"}</span>
 			</div>
 
 			<a
