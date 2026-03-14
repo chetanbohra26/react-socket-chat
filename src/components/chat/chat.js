@@ -11,6 +11,7 @@ const FILE_CHUNK_SIZE = 64 * 1024; // 64KB per chunk
 const FILE_MAX_PARALLEL_CHUNKS = 4; // Send up to 4 chunks concurrently
 const FILE_MAX_SIZE = 500 * 1024 * 1024; // 500MB max file size
 const FILE_RECEIVE_TIMEOUT = 30000; // 30s inactivity timeout for receiving files
+const FILE_MAX_CHUNKS = Math.ceil(FILE_MAX_SIZE / FILE_CHUNK_SIZE); // Max chunks based on max file size
 
 const Chat = ({ setIsOnline = () => {} }) => {
 	const [txtInput, setTxtInput] = useState("");
@@ -98,10 +99,18 @@ const Chat = ({ setIsOnline = () => {} }) => {
 		};
 
 		sock.on("file-start-client", (data) => {
+			const totalChunks = data.totalChunks;
+			if (
+				!Number.isInteger(totalChunks) ||
+				totalChunks <= 0 ||
+				totalChunks > FILE_MAX_CHUNKS
+			) {
+				return;
+			}
 			pendingFilesRef.current[data.fileId] = {
-				chunks: new Array(data.totalChunks),
+				chunks: new Array(totalChunks),
 				receivedCount: 0,
-				totalChunks: data.totalChunks,
+				totalChunks,
 				metadata: data,
 				timer: null,
 			};
@@ -124,7 +133,10 @@ const Chat = ({ setIsOnline = () => {} }) => {
 		sock.on("file-chunk-client", (data) => {
 			const pending = pendingFilesRef.current[data.fileId];
 			if (!pending) return;
-			pending.chunks[data.chunkIndex] = data.data;
+			const idx = data.chunkIndex;
+			if (!Number.isInteger(idx) || idx < 0 || idx >= pending.totalChunks) return;
+			if (pending.chunks[idx] !== undefined) return; // duplicate
+			pending.chunks[idx] = data.data;
 			pending.receivedCount++;
 			const progress = pending.receivedCount / pending.totalChunks;
 			updateFileMsg(data.fileId, { progress });
@@ -135,10 +147,15 @@ const Chat = ({ setIsOnline = () => {} }) => {
 			const pending = pendingFilesRef.current[data.fileId];
 			if (!pending) return;
 			clearTimeout(pending.timer);
-			const blob = new Blob(pending.chunks, {
-				type: pending.metadata.mime || "application/octet-stream",
-			});
-			updateFileMsg(data.fileId, { status: "complete", progress: 1, blob });
+			const hasHoles = pending.chunks.some((c) => c === undefined);
+			if (hasHoles) {
+				updateFileMsg(data.fileId, { status: "failed" });
+			} else {
+				const blob = new Blob(pending.chunks, {
+					type: pending.metadata.mime || "application/octet-stream",
+				});
+				updateFileMsg(data.fileId, { status: "complete", progress: 1, blob });
+			}
 			delete pendingFilesRef.current[data.fileId];
 		});
 
@@ -152,6 +169,11 @@ const Chat = ({ setIsOnline = () => {} }) => {
 			sock.off("file-chunk-client");
 			sock.off("file-end-client");
 			sock.disconnect();
+			// Clear any pending receive timers to avoid post-unmount state updates
+			for (const fileId of Object.keys(pendingFilesRef.current)) {
+				clearTimeout(pendingFilesRef.current[fileId].timer);
+			}
+			pendingFilesRef.current = {};
 		};
 	}, [addItemToChat, updateFileMsg]);
 
@@ -235,6 +257,7 @@ const Chat = ({ setIsOnline = () => {} }) => {
 			inputBoxRef.current?.focus();
 			return;
 		}
+		let fileId = null;
 		try {
 			const file = filePicker.files?.[0];
 			if (!file || file.size === 0) {
@@ -248,7 +271,7 @@ const Chat = ({ setIsOnline = () => {} }) => {
 				return;
 			}
 
-			const fileId = uuidv4();
+			fileId = uuidv4();
 			const arrayBuffer = await file.arrayBuffer();
 			const totalChunks = Math.ceil(arrayBuffer.byteLength / FILE_CHUNK_SIZE);
 			const mime = file.type || "application/octet-stream";
@@ -332,15 +355,22 @@ const Chat = ({ setIsOnline = () => {} }) => {
 				}
 			});
 
-			// Emit file-end
-			await new Promise((resolve) => {
-				socket.emit("file-end", { fileId }, () => resolve());
+			// Emit file-end and wait for ack with timeout
+			await new Promise((resolve, reject) => {
+				let timer = setTimeout(() => reject(new Error("file-end timeout")), 10000);
+				socket.emit("file-end", { fileId }, () => {
+					clearTimeout(timer);
+					resolve();
+				});
 			});
 
 			// Mark complete with the original file as blob
 			updateFileMsg(fileId, { status: "complete", progress: 1, blob: file });
 		} catch (err) {
 			toast.error("Could not send file!");
+			if (fileId) {
+				updateFileMsg(fileId, { status: "failed" });
+			}
 		} finally {
 			filePicker.value = "";
 			inputBoxRef.current?.focus();
