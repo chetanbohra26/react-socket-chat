@@ -65,11 +65,6 @@ const Chat = ({ setIsOnline = () => {} }) => {
 			sock.off("msg-client");
 			sock.disconnect();
 		};
-	// coderabbitai: setIsOnline is intentionally omitted from the dependency array.
-	// It is a useState setter whose reference is guaranteed stable by React across
-	// all renders, so including it would be noise — it can never cause this effect
-	// to re-run. addItemToChat is listed because its stability relies on its own
-	// useCallback([]) dep array, which is an implementation detail that could change.
 	}, [addItemToChat]);
 
 	useEffect(() => {
