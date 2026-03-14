@@ -74,6 +74,13 @@ const Chat = ({ setIsOnline = () => {} }) => {
 		sock.on("disconnect", () => {
 			setIsOnline(false);
 			toast.error("Disconnected from server");
+			// Clean up any in-progress file receives
+			for (const fileId of Object.keys(pendingFilesRef.current)) {
+				const pending = pendingFilesRef.current[fileId];
+				clearTimeout(pending.timer);
+				updateFileMsg(fileId, { status: "failed" });
+				delete pendingFilesRef.current[fileId];
+			}
 		});
 
 		sock.on("msg-client", (msg) => {
