@@ -65,7 +65,7 @@ const Chat = ({ setIsOnline }) => {
 			sock.off("msg-client");
 			sock.disconnect();
 		};
-	}, [addItemToChat]);
+	}, [addItemToChat, setIsOnline]);
 
 	useEffect(() => {
 		scrollToBottom();
