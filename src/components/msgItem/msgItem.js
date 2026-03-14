@@ -42,7 +42,7 @@ const MsgItem = ({ item }) => {
 	}, [item.id]);
 
 	useEffect(() => {
-		if (item.type !== "file" || !item.blob) return;
+		if (item.type !== "file" || item.status !== "complete" || !item.blob) return;
 		let url;
 		try {
 			url = URL.createObjectURL(item.blob);
@@ -54,7 +54,7 @@ const MsgItem = ({ item }) => {
 			URL.revokeObjectURL(url);
 		};
 	// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [item.blob]);
+	}, [item.status]);
 
 	const mime = item.mime?.toLowerCase();
 	const mimeToExt = { "image/png": "png", "image/jpeg": "jpg", "image/jpg": "jpg", "image/gif": "gif", "image/webp": "webp", "image/svg+xml": "svg" };
@@ -219,13 +219,23 @@ const MsgItem = ({ item }) => {
 										}`}
 									>
 										{item.status === "sending"
-											? "Sending..."
-											: "Receiving..."}{" "}
+											? "Sending"
+											: "Receiving"}...{" "}
 										{Math.round((item.progress || 0) * 100)}%
 									</span>
 								</div>
 							)}
 						</div>
+						{/* Failed label */}
+						{item.status === "failed" && (
+							<span
+								className={`text-xs mt-1 ${
+									isMine ? "text-red-200" : "text-red-500"
+								}`}
+							>
+								Transfer failed
+							</span>
+						)}
 						{/* Download button (only when complete) */}
 						{item.status === "complete" && (
 							<button

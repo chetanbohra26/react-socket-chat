@@ -9,6 +9,8 @@ import MsgItem from "../msgItem/msgItem";
 
 const FILE_CHUNK_SIZE = 64 * 1024; // 64KB per chunk
 const FILE_MAX_PARALLEL_CHUNKS = 4; // Send up to 4 chunks concurrently
+const FILE_MAX_SIZE = 500 * 1024 * 1024; // 500MB max file size
+const FILE_RECEIVE_TIMEOUT = 30000; // 30s inactivity timeout for receiving files
 
 const Chat = ({ setIsOnline = () => {} }) => {
 	const [txtInput, setTxtInput] = useState("");
@@ -78,13 +80,25 @@ const Chat = ({ setIsOnline = () => {} }) => {
 			if (msg.id !== clientIdRef.current) addItemToChat(msg, false);
 		});
 
+		const resetReceiveTimeout = (fileId) => {
+			const pending = pendingFilesRef.current[fileId];
+			if (!pending) return;
+			clearTimeout(pending.timer);
+			pending.timer = setTimeout(() => {
+				updateFileMsg(fileId, { status: "failed" });
+				delete pendingFilesRef.current[fileId];
+			}, FILE_RECEIVE_TIMEOUT);
+		};
+
 		sock.on("file-start-client", (data) => {
 			pendingFilesRef.current[data.fileId] = {
 				chunks: new Array(data.totalChunks),
 				receivedCount: 0,
 				totalChunks: data.totalChunks,
 				metadata: data,
+				timer: null,
 			};
+			resetReceiveTimeout(data.fileId);
 			addItemToChat(
 				{
 					type: "file",
@@ -107,11 +121,13 @@ const Chat = ({ setIsOnline = () => {} }) => {
 			pending.receivedCount++;
 			const progress = pending.receivedCount / pending.totalChunks;
 			updateFileMsg(data.fileId, { progress });
+			resetReceiveTimeout(data.fileId);
 		});
 
 		sock.on("file-end-client", (data) => {
 			const pending = pendingFilesRef.current[data.fileId];
 			if (!pending) return;
+			clearTimeout(pending.timer);
 			const blob = new Blob(pending.chunks, {
 				type: pending.metadata.mime || "application/octet-stream",
 			});
@@ -218,6 +234,12 @@ const Chat = ({ setIsOnline = () => {} }) => {
 				toast.error("Please select a valid file.");
 				return;
 			}
+			if (file.size > FILE_MAX_SIZE) {
+				toast.error(
+					`File is too large. Maximum size is ${FILE_MAX_SIZE / (1024 * 1024)} MB.`
+				);
+				return;
+			}
 
 			const fileId = uuidv4();
 			const arrayBuffer = await file.arrayBuffer();
@@ -238,6 +260,7 @@ const Chat = ({ setIsOnline = () => {} }) => {
 
 			// Emit file-start and wait for ack
 			await new Promise((resolve, reject) => {
+				let timer = setTimeout(() => reject(new Error("file-start timeout")), 10000);
 				socket.emit(
 					"file-start",
 					{
@@ -248,28 +271,47 @@ const Chat = ({ setIsOnline = () => {} }) => {
 						totalChunks,
 						senderId: clientIdRef.current,
 					},
-					() => resolve()
+					() => {
+						clearTimeout(timer);
+						resolve();
+					}
 				);
-				setTimeout(() => reject(new Error("file-start timeout")), 10000);
 			});
 
 			// Sliding window chunk send
 			await new Promise((resolve, reject) => {
 				let nextChunkToSend = 0;
 				let ackedCount = 0;
+				let settled = false;
+
+				// Safety timeout: 5s per chunk + 30s base as absolute fallback
+				let timer = setTimeout(() => {
+					if (!settled) {
+						settled = true;
+						reject(new Error("File transfer timeout"));
+					}
+				}, totalChunks * 5000 + 30000);
+
+				const done = (fn) => {
+					if (settled) return;
+					settled = true;
+					clearTimeout(timer);
+					fn();
+				};
 
 				const sendNextChunk = () => {
-					if (nextChunkToSend >= totalChunks) return;
+					if (settled || nextChunkToSend >= totalChunks) return;
 					const chunkIndex = nextChunkToSend++;
 					const start = chunkIndex * FILE_CHUNK_SIZE;
 					const end = Math.min(start + FILE_CHUNK_SIZE, arrayBuffer.byteLength);
 					const data = arrayBuffer.slice(start, end);
 
 					socket.emit("file-chunk", { fileId, chunkIndex, data }, () => {
+						if (settled) return;
 						ackedCount++;
 						updateFileMsg(fileId, { progress: ackedCount / totalChunks });
 						if (ackedCount === totalChunks) {
-							resolve();
+							done(resolve);
 						} else {
 							sendNextChunk();
 						}
@@ -281,12 +323,6 @@ const Chat = ({ setIsOnline = () => {} }) => {
 				for (let i = 0; i < initialBatch; i++) {
 					sendNextChunk();
 				}
-
-				// Safety timeout: 5 min per chunk as absolute fallback
-				setTimeout(
-					() => reject(new Error("File transfer timeout")),
-					totalChunks * 5000 + 30000
-				);
 			});
 
 			// Emit file-end

@@ -32,15 +32,15 @@ io.on("connection", (socket) => {
 
 	socket.on("file-start", (data, cb) => {
 		socket.broadcast.emit("file-start-client", data);
-		cb();
+		if (typeof cb === "function") cb();
 	});
 	socket.on("file-chunk", (data, cb) => {
 		socket.broadcast.emit("file-chunk-client", data);
-		cb();
+		if (typeof cb === "function") cb();
 	});
 	socket.on("file-end", (data, cb) => {
 		socket.broadcast.emit("file-end-client", data);
-		cb();
+		if (typeof cb === "function") cb();
 	});
 });
 
