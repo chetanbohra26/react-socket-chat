@@ -7,7 +7,7 @@ import Resizer from "react-image-file-resizer";
 
 import MsgItem from "../msgItem/msgItem";
 
-const Chat = ({ setIsOnline }) => {
+const Chat = ({ setIsOnline = () => {} }) => {
 	const [txtInput, setTxtInput] = useState("");
 	const [msgs, setMsgs] = useState([]);
 	const [socket, setSocket] = useState(null);
