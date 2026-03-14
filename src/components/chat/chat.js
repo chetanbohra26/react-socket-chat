@@ -272,8 +272,7 @@ const Chat = ({ setIsOnline = () => {} }) => {
 			}
 
 			fileId = uuidv4();
-			const arrayBuffer = await file.arrayBuffer();
-			const totalChunks = Math.ceil(arrayBuffer.byteLength / FILE_CHUNK_SIZE);
+			const totalChunks = Math.ceil(file.size / FILE_CHUNK_SIZE);
 			const mime = file.type || "application/octet-stream";
 
 			// Add placeholder message to chat
@@ -333,18 +332,22 @@ const Chat = ({ setIsOnline = () => {} }) => {
 					if (settled || nextChunkToSend >= totalChunks) return;
 					const chunkIndex = nextChunkToSend++;
 					const start = chunkIndex * FILE_CHUNK_SIZE;
-					const end = Math.min(start + FILE_CHUNK_SIZE, arrayBuffer.byteLength);
-					const data = arrayBuffer.slice(start, end);
+					const end = Math.min(start + FILE_CHUNK_SIZE, file.size);
 
-					socket.emit("file-chunk", { fileId, chunkIndex, data }, () => {
+					file.slice(start, end).arrayBuffer().then((data) => {
 						if (settled) return;
-						ackedCount++;
-						updateFileMsg(fileId, { progress: ackedCount / totalChunks });
-						if (ackedCount === totalChunks) {
-							done(resolve);
-						} else {
-							sendNextChunk();
-						}
+						socket.emit("file-chunk", { fileId, chunkIndex, data }, () => {
+							if (settled) return;
+							ackedCount++;
+							updateFileMsg(fileId, { progress: ackedCount / totalChunks });
+							if (ackedCount === totalChunks) {
+								done(resolve);
+							} else {
+								sendNextChunk();
+							}
+						});
+					}).catch(() => {
+						done(() => reject(new Error("Failed to read file chunk")));
 					});
 				};
 
