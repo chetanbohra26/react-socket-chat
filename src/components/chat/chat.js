@@ -7,6 +7,12 @@ import Resizer from "react-image-file-resizer";
 
 import MsgItem from "../msgItem/msgItem";
 
+const FILE_CHUNK_SIZE = 64 * 1024; // 64KB per chunk
+const FILE_MAX_PARALLEL_CHUNKS = 4; // Send up to 4 chunks concurrently
+const FILE_MAX_SIZE = 500 * 1024 * 1024; // 500MB max file size
+const FILE_RECEIVE_TIMEOUT = 30000; // 30s inactivity timeout for receiving files
+const FILE_MAX_CHUNKS = Math.ceil(FILE_MAX_SIZE / FILE_CHUNK_SIZE); // Max chunks based on max file size
+
 const Chat = ({ setIsOnline = () => {} }) => {
 	const [txtInput, setTxtInput] = useState("");
 	const [msgs, setMsgs] = useState([]);
@@ -14,14 +20,26 @@ const Chat = ({ setIsOnline = () => {} }) => {
 
 	const clientIdRef = useRef(uuidv4());
 	const imgPickerRef = useRef(null);
+	const filePickerRef = useRef(null);
 	const chatBoxRef = useRef(null);
 	const inputBoxRef = useRef(null);
+	const pendingFilesRef = useRef({});
 
 	const scrollToBottom = useCallback(() => {
 		const chatBox = chatBoxRef.current;
 		if (chatBox) {
 			chatBox.scrollTop = chatBox.scrollHeight - chatBox.clientHeight;
 		}
+	}, []);
+
+	const updateFileMsg = useCallback((fileId, updates) => {
+		setMsgs((prev) => {
+			const idx = prev.findIndex((m) => m.type === "file" && m.fileId === fileId);
+			if (idx === -1) return prev;
+			const next = [...prev];
+			next[idx] = { ...next[idx], ...updates };
+			return next;
+		});
 	}, []);
 
 	const addItemToChat = useCallback(
@@ -57,10 +75,88 @@ const Chat = ({ setIsOnline = () => {} }) => {
 		sock.on("disconnect", () => {
 			setIsOnline(false);
 			toast.error("Disconnected from server");
+			// Clean up any in-progress file receives
+			for (const fileId of Object.keys(pendingFilesRef.current)) {
+				const pending = pendingFilesRef.current[fileId];
+				clearTimeout(pending.timer);
+				updateFileMsg(fileId, { status: "failed" });
+				delete pendingFilesRef.current[fileId];
+			}
 		});
 
 		sock.on("msg-client", (msg) => {
 			if (msg.id !== clientIdRef.current) addItemToChat(msg, false);
+		});
+
+		const resetReceiveTimeout = (fileId) => {
+			const pending = pendingFilesRef.current[fileId];
+			if (!pending) return;
+			clearTimeout(pending.timer);
+			pending.timer = setTimeout(() => {
+				updateFileMsg(fileId, { status: "failed" });
+				delete pendingFilesRef.current[fileId];
+			}, FILE_RECEIVE_TIMEOUT);
+		};
+
+		sock.on("file-start-client", (data) => {
+			const totalChunks = data.totalChunks;
+			if (
+				!Number.isInteger(totalChunks) ||
+				totalChunks <= 0 ||
+				totalChunks > FILE_MAX_CHUNKS
+			) {
+				return;
+			}
+			pendingFilesRef.current[data.fileId] = {
+				chunks: new Array(totalChunks),
+				receivedCount: 0,
+				totalChunks,
+				metadata: data,
+				timer: null,
+			};
+			resetReceiveTimeout(data.fileId);
+			addItemToChat(
+				{
+					type: "file",
+					fileId: data.fileId,
+					fileName: data.fileName,
+					fileSize: data.fileSize,
+					mime: data.mime,
+					status: "receiving",
+					progress: 0,
+					blob: null,
+				},
+				false
+			);
+		});
+
+		sock.on("file-chunk-client", (data) => {
+			const pending = pendingFilesRef.current[data.fileId];
+			if (!pending) return;
+			const idx = data.chunkIndex;
+			if (!Number.isInteger(idx) || idx < 0 || idx >= pending.totalChunks) return;
+			if (pending.chunks[idx] !== undefined) return; // duplicate
+			pending.chunks[idx] = data.data;
+			pending.receivedCount++;
+			const progress = pending.receivedCount / pending.totalChunks;
+			updateFileMsg(data.fileId, { progress });
+			resetReceiveTimeout(data.fileId);
+		});
+
+		sock.on("file-end-client", (data) => {
+			const pending = pendingFilesRef.current[data.fileId];
+			if (!pending) return;
+			clearTimeout(pending.timer);
+			const hasHoles = pending.chunks.some((c) => c === undefined);
+			if (hasHoles) {
+				updateFileMsg(data.fileId, { status: "failed" });
+			} else {
+				const blob = new Blob(pending.chunks, {
+					type: pending.metadata.mime || "application/octet-stream",
+				});
+				updateFileMsg(data.fileId, { status: "complete", progress: 1, blob });
+			}
+			delete pendingFilesRef.current[data.fileId];
 		});
 
 		setSocket(sock);
@@ -69,9 +165,17 @@ const Chat = ({ setIsOnline = () => {} }) => {
 			sock.off("connect");
 			sock.off("disconnect");
 			sock.off("msg-client");
+			sock.off("file-start-client");
+			sock.off("file-chunk-client");
+			sock.off("file-end-client");
 			sock.disconnect();
+			// Clear any pending receive timers to avoid post-unmount state updates
+			for (const fileId of Object.keys(pendingFilesRef.current)) {
+				clearTimeout(pendingFilesRef.current[fileId].timer);
+			}
+			pendingFilesRef.current = {};
 		};
-	}, [addItemToChat]);
+	}, [addItemToChat, updateFileMsg]);
 
 	useEffect(() => {
 		scrollToBottom();
@@ -145,6 +249,137 @@ const Chat = ({ setIsOnline = () => {} }) => {
 		}
 	};
 
+	const sendFileMsg = async () => {
+		const filePicker = filePickerRef.current;
+		if (!socket) {
+			toast.error("Could not send message!");
+			filePicker.value = "";
+			inputBoxRef.current?.focus();
+			return;
+		}
+		let fileId = null;
+		try {
+			const file = filePicker.files?.[0];
+			if (!file || file.size === 0) {
+				toast.error("Please select a valid file.");
+				return;
+			}
+			if (file.size > FILE_MAX_SIZE) {
+				toast.error(
+					`File is too large. Maximum size is ${FILE_MAX_SIZE / (1024 * 1024)} MB.`
+				);
+				return;
+			}
+
+			fileId = uuidv4();
+			const totalChunks = Math.ceil(file.size / FILE_CHUNK_SIZE);
+			const mime = file.type || "application/octet-stream";
+
+			// Add placeholder message to chat
+			addItemToChat({
+				type: "file",
+				fileId,
+				fileName: file.name,
+				fileSize: file.size,
+				mime,
+				status: "sending",
+				progress: 0,
+				blob: null,
+			});
+
+			// Emit file-start and wait for ack
+			await new Promise((resolve, reject) => {
+				let timer = setTimeout(() => reject(new Error("file-start timeout")), 10000);
+				socket.emit(
+					"file-start",
+					{
+						fileId,
+						fileName: file.name,
+						fileSize: file.size,
+						mime,
+						totalChunks,
+						senderId: clientIdRef.current,
+					},
+					() => {
+						clearTimeout(timer);
+						resolve();
+					}
+				);
+			});
+
+			// Sliding window chunk send
+			await new Promise((resolve, reject) => {
+				let nextChunkToSend = 0;
+				let ackedCount = 0;
+				let settled = false;
+
+				// Safety timeout: 5s per chunk + 30s base as absolute fallback
+				let timer = setTimeout(() => {
+					if (!settled) {
+						settled = true;
+						reject(new Error("File transfer timeout"));
+					}
+				}, totalChunks * 5000 + 30000);
+
+				const done = (fn) => {
+					if (settled) return;
+					settled = true;
+					clearTimeout(timer);
+					fn();
+				};
+
+				const sendNextChunk = () => {
+					if (settled || nextChunkToSend >= totalChunks) return;
+					const chunkIndex = nextChunkToSend++;
+					const start = chunkIndex * FILE_CHUNK_SIZE;
+					const end = Math.min(start + FILE_CHUNK_SIZE, file.size);
+
+					file.slice(start, end).arrayBuffer().then((data) => {
+						if (settled) return;
+						socket.emit("file-chunk", { fileId, chunkIndex, data }, () => {
+							if (settled) return;
+							ackedCount++;
+							updateFileMsg(fileId, { progress: ackedCount / totalChunks });
+							if (ackedCount === totalChunks) {
+								done(resolve);
+							} else {
+								sendNextChunk();
+							}
+						});
+					}).catch(() => {
+						done(() => reject(new Error("Failed to read file chunk")));
+					});
+				};
+
+				// Launch initial batch
+				const initialBatch = Math.min(FILE_MAX_PARALLEL_CHUNKS, totalChunks);
+				for (let i = 0; i < initialBatch; i++) {
+					sendNextChunk();
+				}
+			});
+
+			// Emit file-end and wait for ack with timeout
+			await new Promise((resolve, reject) => {
+				let timer = setTimeout(() => reject(new Error("file-end timeout")), 10000);
+				socket.emit("file-end", { fileId }, () => {
+					clearTimeout(timer);
+					resolve();
+				});
+			});
+
+			// Mark complete with the original file as blob
+			updateFileMsg(fileId, { status: "complete", progress: 1, blob: file });
+		} catch (err) {
+			toast.error("Could not send file!");
+			if (fileId) {
+				updateFileMsg(fileId, { status: "failed" });
+			}
+		} finally {
+			filePicker.value = "";
+			inputBoxRef.current?.focus();
+		}
+	};
+
 	return (
 		<div className="flex flex-col flex-1 overflow-hidden bg-slate-100">
 			{/* Message feed */}
@@ -159,7 +394,7 @@ const Chat = ({ setIsOnline = () => {} }) => {
 					</div>
 				)}
 				{msgs.map((item) => (
-					<MsgItem item={item} key={item.id} />
+					<MsgItem item={item} key={item.type === "file" ? item.fileId : item.id} />
 				))}
 			</div>
 
@@ -172,6 +407,12 @@ const Chat = ({ setIsOnline = () => {} }) => {
 					ref={imgPickerRef}
 					onChange={sendImgMsg}
 				/>
+				<input
+					type="file"
+					style={{ display: "none" }}
+					ref={filePickerRef}
+					onChange={sendFileMsg}
+				/>
 				<button
 					type="button"
 					onClick={() => imgPickerRef.current?.click()}
@@ -179,6 +420,16 @@ const Chat = ({ setIsOnline = () => {} }) => {
 					title="Send image"
 				>
 					<img src="img_pick.svg" alt="Pick" className="w-5 h-5" />
+				</button>
+				<button
+					type="button"
+					onClick={() => filePickerRef.current?.click()}
+					className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 transition flex-shrink-0"
+					title="Send file"
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+						<path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+					</svg>
 				</button>
 
 				<input
