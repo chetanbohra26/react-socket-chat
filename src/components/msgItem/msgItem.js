@@ -7,8 +7,20 @@ const formatTime = (ts) => {
 	return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 };
 
+const formatSize = (bytes) => {
+	if (bytes == null || bytes === 0) return "0 B";
+	const units = ["B", "KB", "MB", "GB"];
+	const i = Math.min(
+		Math.floor(Math.log(bytes) / Math.log(1024)),
+		units.length - 1
+	);
+	const size = (bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1);
+	return `${size} ${units[i]}`;
+};
+
 const MsgItem = ({ item }) => {
 	const [img, setImg] = useState(null);
+	const [fileUrl, setFileUrl] = useState(null);
 	const [showModal, setShowModal] = useState(false);
 	const viewBtnRef = useRef(null);
 	const closeBtnRef = useRef(null);
@@ -28,6 +40,21 @@ const MsgItem = ({ item }) => {
 	// item.blob identity changes when a new Blob is created for each message
 	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [item.id]);
+
+	useEffect(() => {
+		if (item.type !== "file" || !item.blob) return;
+		let url;
+		try {
+			url = URL.createObjectURL(item.blob);
+		} catch {
+			return;
+		}
+		setFileUrl(url);
+		return () => {
+			URL.revokeObjectURL(url);
+		};
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [item.blob]);
 
 	const mime = item.mime?.toLowerCase();
 	const mimeToExt = { "image/png": "png", "image/jpeg": "jpg", "image/jpg": "jpg", "image/gif": "gif", "image/webp": "webp", "image/svg+xml": "svg" };
@@ -50,6 +77,14 @@ const MsgItem = ({ item }) => {
 		const a = document.createElement("a");
 		a.href = img;
 		a.download = filename;
+		a.click();
+	};
+
+	const handleFileDownload = () => {
+		if (!fileUrl) return;
+		const a = document.createElement("a");
+		a.href = fileUrl;
+		a.download = item.fileName || "download";
 		a.click();
 	};
 
@@ -110,6 +145,115 @@ const MsgItem = ({ item }) => {
 								Download
 							</button>
 						</div>
+					</div>
+				)}
+
+				{item.type === "file" && (
+					<div
+						className={`flex items-center gap-3 px-3 py-2.5 rounded-2xl shadow-sm min-w-[200px] ${
+							isMine
+								? "bg-indigo-500 text-white rounded-br-[4px]"
+								: "bg-white text-slate-800 rounded-bl-[4px]"
+						}`}
+					>
+						{/* File icon */}
+						<div
+							className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+								isMine ? "bg-indigo-400" : "bg-slate-100"
+							}`}
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								className="w-5 h-5"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+								strokeWidth={2}
+							>
+								<path
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+								/>
+							</svg>
+						</div>
+						{/* File info + progress */}
+						<div className="flex flex-col min-w-0 flex-1">
+							<span className="text-sm font-medium truncate">
+								{item.fileName || "Unknown file"}
+							</span>
+							<span
+								className={`text-xs ${
+									isMine ? "text-indigo-200" : "text-slate-400"
+								}`}
+							>
+								{formatSize(item.fileSize)}
+								{item.mime &&
+								item.mime !== "application/octet-stream"
+									? ` \u00b7 ${item.mime.split("/").pop().toUpperCase()}`
+									: ""}
+							</span>
+							{/* Progress bar during transfer */}
+							{(item.status === "sending" ||
+								item.status === "receiving") && (
+								<div className="mt-1.5">
+									<div
+										className={`w-full h-1.5 rounded-full overflow-hidden ${
+											isMine ? "bg-indigo-400" : "bg-slate-200"
+										}`}
+									>
+										<div
+											className={`h-full rounded-full transition-all duration-200 ${
+												isMine ? "bg-white" : "bg-indigo-500"
+											}`}
+											style={{
+												width: `${(item.progress || 0) * 100}%`,
+											}}
+										/>
+									</div>
+									<span
+										className={`text-[0.625rem] mt-0.5 block ${
+											isMine
+												? "text-indigo-200"
+												: "text-slate-400"
+										}`}
+									>
+										{item.status === "sending"
+											? "Sending..."
+											: "Receiving..."}{" "}
+										{Math.round((item.progress || 0) * 100)}%
+									</span>
+								</div>
+							)}
+						</div>
+						{/* Download button (only when complete) */}
+						{item.status === "complete" && (
+							<button
+								type="button"
+								onClick={handleFileDownload}
+								className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition ${
+									isMine
+										? "bg-indigo-400 hover:bg-indigo-300 text-white"
+										: "bg-slate-100 hover:bg-slate-200 text-slate-600"
+								}`}
+								title="Download"
+							>
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									className="w-4 h-4"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+									strokeWidth={2}
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+									/>
+								</svg>
+							</button>
+						)}
 					</div>
 				)}
 

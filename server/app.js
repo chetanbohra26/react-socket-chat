@@ -4,11 +4,12 @@ const app = express();
 const http = require("http").Server(app);
 const io =
 	process.env.NODE_ENV === "production"
-		? require("socket.io")(http)
+		? require("socket.io")(http, { maxHttpBufferSize: 200 * 1024 })
 		: require("socket.io")(http, {
 				cors: {
 					origin: "*",
 				},
+				maxHttpBufferSize: 200 * 1024,
 		  });
 
 const path = require("path");
@@ -27,6 +28,19 @@ io.on("connection", (socket) => {
 	socket.on("msg-server", (data) => {
 		console.log(data);
 		io.emit("msg-client", data);
+	});
+
+	socket.on("file-start", (data, cb) => {
+		socket.broadcast.emit("file-start-client", data);
+		cb();
+	});
+	socket.on("file-chunk", (data, cb) => {
+		socket.broadcast.emit("file-chunk-client", data);
+		cb();
+	});
+	socket.on("file-end", (data, cb) => {
+		socket.broadcast.emit("file-end-client", data);
+		cb();
 	});
 });
 
