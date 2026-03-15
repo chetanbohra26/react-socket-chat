@@ -4,7 +4,7 @@ const app = express();
 const http = require('http').Server(app);
 const isDev = process.env.NODE_ENV !== 'production';
 const io = require('socket.io')(http, {
-	maxHttpBufferSize: 200 * 1024,
+	maxHttpBufferSize: 1024 * 1024,
 	...(isDev && { cors: { origin: '*' } }),
 });
 
