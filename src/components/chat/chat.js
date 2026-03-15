@@ -152,7 +152,32 @@ const Chat = ({ setIsOnline = () => {} }) => {
 				timer: null,
 			};
 			resetReceiveTimeout(data.fileId);
-			updateFileMsg(data.fileId, { status: 'receiving', progress: 0 });
+			setMsgs((prev) => {
+				const idx = prev.findIndex(
+					(m) => m.type === 'file' && m.fileId === data.fileId,
+				);
+				if (idx === -1) {
+					return [
+						...prev,
+						{
+							type: 'file',
+							fileId: data.fileId,
+							fileName: data.fileName,
+							fileSize: data.fileSize,
+							mime: data.mime,
+							status: 'receiving',
+							progress: 0,
+							blob: null,
+							isMine: false,
+							timestamp: Date.now(),
+							id: prev.length,
+						},
+					];
+				}
+				const next = [...prev];
+				next[idx] = { ...next[idx], status: 'receiving', progress: 0 };
+				return next;
+			});
 		});
 
 		sock.on('file-chunk-client', (data) => {
