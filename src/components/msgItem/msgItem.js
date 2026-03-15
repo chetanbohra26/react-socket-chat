@@ -174,7 +174,9 @@ const MsgItem = ({ item }) => {
 						{/* File icon */}
 						<div
 							className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-								isMine ? 'bg-indigo-400' : 'bg-slate-100 dark:bg-slate-600'
+								isMine
+									? 'bg-indigo-400'
+									: 'bg-slate-100 dark:bg-slate-600'
 							}`}
 						>
 							<FileIcon className='w-5 h-5' />
@@ -197,6 +199,14 @@ const MsgItem = ({ item }) => {
 									? ` \u00b7 ${item.mime.split('/').pop().toUpperCase()}`
 									: ''}
 							</span>
+							{/* Queued indicator */}
+							{item.status === 'queued' && (
+								<span
+									className={`text-[0.625rem] mt-0.5 block ${isMine ? 'text-indigo-200' : 'text-slate-400'}`}
+								>
+									Queued
+								</span>
+							)}
 							{/* Progress bar during transfer */}
 							{(item.status === 'sending' ||
 								item.status === 'receiving') && (

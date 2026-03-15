@@ -90,6 +90,22 @@ const Chat = ({ setIsOnline = () => {} }) => {
 			if (msg.id !== clientIdRef.current) addItemToChat(msg, false);
 		});
 
+		sock.on('file-queue-client', (data) => {
+			addItemToChat(
+				{
+					type: 'file',
+					fileId: data.fileId,
+					fileName: data.fileName,
+					fileSize: data.fileSize,
+					mime: data.mime,
+					status: 'queued',
+					progress: 0,
+					blob: null,
+				},
+				false,
+			);
+		});
+
 		const resetReceiveTimeout = (fileId) => {
 			const pending = pendingFilesRef.current[fileId];
 			if (!pending) return;
@@ -126,19 +142,7 @@ const Chat = ({ setIsOnline = () => {} }) => {
 				timer: null,
 			};
 			resetReceiveTimeout(data.fileId);
-			addItemToChat(
-				{
-					type: 'file',
-					fileId: data.fileId,
-					fileName: data.fileName,
-					fileSize: data.fileSize,
-					mime: data.mime,
-					status: 'receiving',
-					progress: 0,
-					blob: null,
-				},
-				false,
-			);
+			updateFileMsg(data.fileId, { status: 'receiving', progress: 0 });
 		});
 
 		sock.on('file-chunk-client', (data) => {
@@ -190,6 +194,7 @@ const Chat = ({ setIsOnline = () => {} }) => {
 			sock.off('connect');
 			sock.off('disconnect');
 			sock.off('msg-client');
+			sock.off('file-queue-client');
 			sock.off('file-start-client');
 			sock.off('file-chunk-client');
 			sock.off('file-end-client');
@@ -202,8 +207,12 @@ const Chat = ({ setIsOnline = () => {} }) => {
 		};
 	}, [addItemToChat, updateFileMsg, setIsOnline]);
 
+	const msgCountRef = useRef(0);
 	useEffect(() => {
-		scrollToBottom();
+		if (msgs.length > msgCountRef.current) {
+			msgCountRef.current = msgs.length;
+			scrollToBottom();
+		}
 	}, [msgs, scrollToBottom]);
 
 	const sendTxtMsg = useCallback(() => {
@@ -274,7 +283,7 @@ const Chat = ({ setIsOnline = () => {} }) => {
 		}
 	};
 
-	const sendFileMsg = async (droppedFile = null) => {
+	const sendFileMsg = async (droppedFile = null, existingFileId = null) => {
 		const filePicker = filePickerRef.current;
 		if (!socket) {
 			toast.error('Could not send message!');
@@ -296,21 +305,24 @@ const Chat = ({ setIsOnline = () => {} }) => {
 				return;
 			}
 
-			fileId = uuidv4();
+			fileId = existingFileId ?? uuidv4();
 			const totalChunks = Math.ceil(file.size / FILE_CHUNK_SIZE);
 			const mime = file.type || 'application/octet-stream';
 
-			// Add placeholder message to chat
-			addItemToChat({
-				type: 'file',
-				fileId,
-				fileName: file.name,
-				fileSize: file.size,
-				mime,
-				status: 'sending',
-				progress: 0,
-				blob: null,
-			});
+			if (existingFileId) {
+				updateFileMsg(fileId, { status: 'sending' });
+			} else {
+				addItemToChat({
+					type: 'file',
+					fileId,
+					fileName: file.name,
+					fileSize: file.size,
+					mime,
+					status: 'sending',
+					progress: 0,
+					blob: null,
+				});
+			}
 
 			// Emit file-start and wait for ack
 			await new Promise((resolve, reject) => {
@@ -437,14 +449,53 @@ const Chat = ({ setIsOnline = () => {} }) => {
 	return (
 		<div
 			className='relative flex flex-col flex-1 overflow-hidden bg-slate-100 dark:bg-slate-900'
-			onDragEnter={(e) => { e.preventDefault(); dragCounterRef.current++; setIsDragging(true); }}
-			onDragLeave={(e) => { e.preventDefault(); dragCounterRef.current = Math.max(0, dragCounterRef.current - 1); if (dragCounterRef.current === 0) setIsDragging(false); }}
+			onDragEnter={(e) => {
+				e.preventDefault();
+				dragCounterRef.current++;
+				setIsDragging(true);
+			}}
+			onDragLeave={(e) => {
+				e.preventDefault();
+				dragCounterRef.current = Math.max(
+					0,
+					dragCounterRef.current - 1,
+				);
+				if (dragCounterRef.current === 0) setIsDragging(false);
+			}}
 			onDragOver={(e) => e.preventDefault()}
-			onDrop={(e) => { e.preventDefault(); dragCounterRef.current = 0; setIsDragging(false); const file = e.dataTransfer.files?.[0]; if (file) sendFileMsg(file); }}
+			onDrop={async (e) => {
+				e.preventDefault();
+				dragCounterRef.current = 0;
+				setIsDragging(false);
+				const files = [...e.dataTransfer.files];
+				const queue = files.map((f) => {
+					const fileId = uuidv4();
+					addItemToChat({
+						type: 'file',
+						fileId,
+						fileName: f.name,
+						fileSize: f.size,
+						mime: f.type || 'application/octet-stream',
+						status: 'queued',
+						progress: 0,
+						blob: null,
+					});
+					socket?.emit('file-queue', {
+						fileId,
+						fileName: f.name,
+						fileSize: f.size,
+						mime: f.type || 'application/octet-stream',
+					});
+					return { f, fileId };
+				});
+				for (const { f, fileId } of queue) await sendFileMsg(f, fileId);
+			}}
 		>
 			{isDragging && (
 				<div className='absolute inset-0 z-10 flex items-center justify-center bg-indigo-500/20 border-2 border-dashed border-indigo-400 rounded-lg pointer-events-none'>
-					<span className='text-indigo-400 font-semibold text-lg'>Drop to send file</span>
+					<span className='text-indigo-400 font-semibold text-lg'>
+						Drop to send file
+					</span>
 				</div>
 			)}
 
@@ -485,9 +536,35 @@ const Chat = ({ setIsOnline = () => {} }) => {
 				/>
 				<input
 					type='file'
+					multiple
 					style={{ display: 'none' }}
 					ref={filePickerRef}
-					onChange={() => sendFileMsg()}
+					onChange={async (e) => {
+						const files = [...e.target.files];
+						filePickerRef.current.value = '';
+						const queue = files.map((f) => {
+							const fileId = uuidv4();
+							addItemToChat({
+								type: 'file',
+								fileId,
+								fileName: f.name,
+								fileSize: f.size,
+								mime: f.type || 'application/octet-stream',
+								status: 'queued',
+								progress: 0,
+								blob: null,
+							});
+							socket?.emit('file-queue', {
+								fileId,
+								fileName: f.name,
+								fileSize: f.size,
+								mime: f.type || 'application/octet-stream',
+							});
+							return { f, fileId };
+						});
+						for (const { f, fileId } of queue)
+							await sendFileMsg(f, fileId);
+					}}
 				/>
 				<button
 					type='button'
