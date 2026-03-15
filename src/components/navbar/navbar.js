@@ -1,4 +1,4 @@
-const Navbar = ({ isOnline }) => {
+const Navbar = ({ isOnline, isDark, onToggle }) => {
 	return (
 		<nav className='flex items-center justify-between px-4 py-3 bg-indigo-600 shadow-md'>
 			<div className='flex items-center gap-2'>
@@ -19,15 +19,26 @@ const Navbar = ({ isOnline }) => {
 				</span>
 			</div>
 
-			<a
-				href='https://www.github.com/chetanbohra26'
-				target='_blank'
-				rel='noopener noreferrer'
-				className='w-8 h-8 rounded-full bg-white/25 hover:bg-white/40 flex items-center justify-center transition'
-				title='GitHub'
-			>
-				<img src='github.svg' alt='GitHub' className='w-5 h-5 invert' />
-			</a>
+			<div className='flex items-center gap-2'>
+				<button
+					type='button'
+					onClick={onToggle}
+					className='w-8 h-8 rounded-full bg-white/25 hover:bg-white/40 flex items-center justify-center transition text-base'
+					title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+					aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+				>
+					{isDark ? '☀️' : '🌙'}
+				</button>
+				<a
+					href='https://www.github.com/chetanbohra26'
+					target='_blank'
+					rel='noopener noreferrer'
+					className='w-8 h-8 rounded-full bg-white/25 hover:bg-white/40 flex items-center justify-center transition'
+					title='GitHub'
+				>
+					<img src='github.svg' alt='GitHub' className='w-5 h-5 invert' />
+				</a>
+			</div>
 		</nav>
 	);
 };

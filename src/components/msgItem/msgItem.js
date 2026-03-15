@@ -73,17 +73,6 @@ const MsgItem = ({ item }) => {
 	const filename = `image-${item.id}.${ext}`;
 
 	const handleDownload = () => {
-		if (navigator.canShare) {
-			const file = new File([item.blob], filename, {
-				type: item.blob.type,
-			});
-			if (navigator.canShare({ files: [file] })) {
-				navigator.share({ files: [file] }).catch((err) => {
-					if (err.name !== 'AbortError') fallbackDownload();
-				});
-				return;
-			}
-		}
 		fallbackDownload();
 	};
 
@@ -140,7 +129,7 @@ const MsgItem = ({ item }) => {
 						className={`px-3 py-2 rounded-2xl text-sm leading-relaxed shadow-sm break-words ${
 							isMine
 								? 'bg-indigo-500 text-white rounded-br-[4px]'
-								: 'bg-white text-slate-800 rounded-bl-[4px]'
+								: 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-bl-[4px]'
 						}`}
 					>
 						{item.text}
@@ -179,13 +168,13 @@ const MsgItem = ({ item }) => {
 						className={`flex items-center gap-3 px-3 py-2.5 rounded-2xl shadow-sm min-w-[200px] ${
 							isMine
 								? 'bg-indigo-500 text-white rounded-br-[4px]'
-								: 'bg-white text-slate-800 rounded-bl-[4px]'
+								: 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-bl-[4px]'
 						}`}
 					>
 						{/* File icon */}
 						<div
 							className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-								isMine ? 'bg-indigo-400' : 'bg-slate-100'
+								isMine ? 'bg-indigo-400' : 'bg-slate-100 dark:bg-slate-600'
 							}`}
 						>
 							<FileIcon className='w-5 h-5' />
@@ -216,7 +205,7 @@ const MsgItem = ({ item }) => {
 										className={`w-full h-1.5 rounded-full overflow-hidden ${
 											isMine
 												? 'bg-indigo-400'
-												: 'bg-slate-200'
+												: 'bg-slate-200 dark:bg-slate-600'
 										}`}
 									>
 										<div
@@ -265,7 +254,7 @@ const MsgItem = ({ item }) => {
 								className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition ${
 									isMine
 										? 'bg-indigo-400 hover:bg-indigo-300 text-white'
-										: 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+										: 'bg-slate-100 dark:bg-slate-600 hover:bg-slate-200 dark:hover:bg-slate-500 text-slate-600 dark:text-slate-300'
 								}`}
 								title='Download'
 							>
@@ -276,7 +265,7 @@ const MsgItem = ({ item }) => {
 				)}
 
 				<span
-					className={`text-[0.6875rem] text-slate-400 mt-0.5 px-1 ${isMine ? 'text-right' : ''}`}
+					className={`text-[0.6875rem] text-slate-400 dark:text-slate-500 mt-0.5 px-1 ${isMine ? 'text-right' : ''}`}
 				>
 					{formatTime(item.timestamp)}
 				</span>
