@@ -176,7 +176,7 @@ const Chat = ({ setIsOnline = () => {} }) => {
 			}
 			pendingFilesRef.current = {};
 		};
-	}, [addItemToChat, updateFileMsg]);
+	}, [addItemToChat, updateFileMsg, setIsOnline]);
 
 	useEffect(() => {
 		scrollToBottom();

@@ -94,9 +94,10 @@ const MsgItem = ({ item }) => {
 		closeBtnRef.current?.focus();
 		const onKeyDown = (e) => { if (e.key === "Escape") setShowModal(false); };
 		document.addEventListener("keydown", onKeyDown);
+		const viewBtn = viewBtnRef.current;
 		return () => {
 			document.removeEventListener("keydown", onKeyDown);
-			viewBtnRef.current?.focus();
+			viewBtn?.focus();
 		};
 	}, [showModal]);
 
