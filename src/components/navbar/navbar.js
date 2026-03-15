@@ -17,10 +17,10 @@ const Navbar = ({ isOnline }) => {
 				href="https://www.github.com/chetanbohra26"
 				target="_blank"
 				rel="noopener noreferrer"
-				className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center transition"
+				className="w-8 h-8 rounded-full bg-white/25 hover:bg-white/40 flex items-center justify-center transition"
 				title="GitHub"
 			>
-				<img src="github.svg" alt="GitHub" className="w-4 h-4 invert" />
+				<img src="github.svg" alt="GitHub" className="w-5 h-5 invert" />
 			</a>
 		</nav>
 	);

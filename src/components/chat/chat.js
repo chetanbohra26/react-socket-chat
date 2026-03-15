@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import Resizer from "react-image-file-resizer";
 
 import MsgItem from "../msgItem/msgItem";
+import { ImageIcon, AttachIcon } from "../../assets/icons";
 
 const FILE_CHUNK_SIZE = 64 * 1024; // 64KB per chunk
 const FILE_MAX_PARALLEL_CHUNKS = 4; // Send up to 4 chunks concurrently
@@ -419,7 +420,7 @@ const Chat = ({ setIsOnline = () => {} }) => {
 					className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 transition flex-shrink-0"
 					title="Send image"
 				>
-					<img src="img_pick.svg" alt="Pick" className="w-5 h-5" />
+					<ImageIcon className="w-5 h-5" />
 				</button>
 				<button
 					type="button"
@@ -427,9 +428,7 @@ const Chat = ({ setIsOnline = () => {} }) => {
 					className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 transition flex-shrink-0"
 					title="Send file"
 				>
-					<svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-						<path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-					</svg>
+					<AttachIcon className="w-5 h-5" />
 				</button>
 
 				<input
