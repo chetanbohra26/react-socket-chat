@@ -23,9 +23,12 @@
 		"build": "react-scripts build",
 		"test": "react-scripts test",
 		"eject": "react-scripts eject",
-		"docker:build": "docker build -f .devops/Dockerfile -t react-socket-chat .",
-		"docker:up": "docker compose -f .devops/docker-compose.yml up --build",
-		"docker:down": "docker compose -f .devops/docker-compose.yml down"
+		"docker:build": "docker build -f .devops/Dockerfile -t chetanbohra26/react-socket-chat:latest .",
+		"docker:push": "docker push chetanbohra26/react-socket-chat:latest",
+		"docker:up": "docker compose -f .devops/docker-compose-server.yml up",
+		"docker:up:local": "docker compose -f .devops/docker-compose.yml up --build",
+		"docker:down": "docker compose -f .devops/docker-compose-server.yml down",
+		"docker:down:local": "docker compose -f .devops/docker-compose.yml down"
 	},
 	"eslintConfig": {
 		"extends": [

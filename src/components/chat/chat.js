@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 import { toast } from 'react-toastify';
 import { io } from 'socket.io-client';
@@ -91,6 +91,16 @@ const Chat = ({ setIsOnline = () => {} }) => {
 		});
 
 		sock.on('file-queue-client', (data) => {
+			if (
+				!data.fileId ||
+				!data.fileName ||
+				data.fileSize == null ||
+				!Number.isFinite(data.fileSize) ||
+				data.fileSize <= 0 ||
+				data.fileSize > FILE_MAX_SIZE
+			) {
+				return;
+			}
 			addItemToChat(
 				{
 					type: 'file',
@@ -104,7 +114,7 @@ const Chat = ({ setIsOnline = () => {} }) => {
 				},
 				false,
 			);
-		});
+			});
 
 		const resetReceiveTimeout = (fileId) => {
 			const pending = pendingFilesRef.current[fileId];
@@ -450,11 +460,13 @@ const Chat = ({ setIsOnline = () => {} }) => {
 		<div
 			className='relative flex flex-col flex-1 overflow-hidden bg-slate-100 dark:bg-slate-900'
 			onDragEnter={(e) => {
+				if (!e.dataTransfer?.types.includes('Files')) return;
 				e.preventDefault();
 				dragCounterRef.current++;
 				setIsDragging(true);
 			}}
 			onDragLeave={(e) => {
+				if (!e.dataTransfer?.types.includes('Files')) return;
 				e.preventDefault();
 				dragCounterRef.current = Math.max(
 					0,
@@ -462,8 +474,12 @@ const Chat = ({ setIsOnline = () => {} }) => {
 				);
 				if (dragCounterRef.current === 0) setIsDragging(false);
 			}}
-			onDragOver={(e) => e.preventDefault()}
+			onDragOver={(e) => {
+				if (!e.dataTransfer?.types.includes('Files')) return;
+				e.preventDefault();
+			}}
 			onDrop={async (e) => {
+				if (!e.dataTransfer?.types.includes('Files')) return;
 				e.preventDefault();
 				dragCounterRef.current = 0;
 				setIsDragging(false);
