@@ -299,9 +299,9 @@ const Chat = ({ setIsOnline = () => {} }) => {
 				return;
 			}
 			if (file.size > FILE_MAX_SIZE) {
-				toast.error(
-					`File is too large. Maximum size is ${FILE_MAX_SIZE / (1024 * 1024)} MB.`,
-				);
+				const mb = FILE_MAX_SIZE / (1024 * 1024);
+				const sizeStr = mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb.toFixed(0)} MB`;
+				toast.error(`File is too large. Maximum size is ${sizeStr}.`);
 				return;
 			}
 
