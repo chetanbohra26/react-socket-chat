@@ -1,0 +1,10 @@
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: .devops/Dockerfile
+    ports:
+      - "7500:7500"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
