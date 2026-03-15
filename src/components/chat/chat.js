@@ -487,7 +487,7 @@ const Chat = ({ setIsOnline = () => {} }) => {
 					type='file'
 					style={{ display: 'none' }}
 					ref={filePickerRef}
-					onChange={sendFileMsg}
+					onChange={() => sendFileMsg()}
 				/>
 				<button
 					type='button'
