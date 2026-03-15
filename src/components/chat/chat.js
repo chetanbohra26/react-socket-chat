@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
-import { toast } from "react-toastify";
-import { io } from "socket.io-client";
-import { v4 as uuidv4 } from "uuid";
-import Resizer from "react-image-file-resizer";
+import { toast } from 'react-toastify';
+import { io } from 'socket.io-client';
+import { v4 as uuidv4 } from 'uuid';
+import Resizer from 'react-image-file-resizer';
 
-import MsgItem from "../msgItem/msgItem";
-import { ImageIcon, AttachIcon } from "../../assets/icons";
+import MsgItem from '../msgItem/msgItem';
+import { ImageIcon, AttachIcon } from '../../assets/icons';
 
 const FILE_CHUNK_SIZE = 64 * 1024; // 64KB per chunk
 const FILE_MAX_PARALLEL_CHUNKS = 4; // Send up to 4 chunks concurrently
@@ -15,7 +15,7 @@ const FILE_RECEIVE_TIMEOUT = 30000; // 30s inactivity timeout for receiving file
 const FILE_MAX_CHUNKS = Math.ceil(FILE_MAX_SIZE / FILE_CHUNK_SIZE); // Max chunks based on max file size
 
 const Chat = ({ setIsOnline = () => {} }) => {
-	const [txtInput, setTxtInput] = useState("");
+	const [txtInput, setTxtInput] = useState('');
 	const [msgs, setMsgs] = useState([]);
 	const [socket, setSocket] = useState(null);
 
@@ -35,7 +35,9 @@ const Chat = ({ setIsOnline = () => {} }) => {
 
 	const updateFileMsg = useCallback((fileId, updates) => {
 		setMsgs((prev) => {
-			const idx = prev.findIndex((m) => m.type === "file" && m.fileId === fileId);
+			const idx = prev.findIndex(
+				(m) => m.type === 'file' && m.fileId === fileId,
+			);
 			if (idx === -1) return prev;
 			const next = [...prev];
 			next[idx] = { ...next[idx], ...updates };
@@ -43,49 +45,46 @@ const Chat = ({ setIsOnline = () => {} }) => {
 		});
 	}, []);
 
-	const addItemToChat = useCallback(
-		(msg, isMine = true) => {
-			if (!isMine && msg.type === "image") {
-				msg.blob = new Blob([msg.blob], { type: msg.mime });
-			}
-			msg.isMine = isMine;
-			if (msg.timestamp == null) msg.timestamp = Date.now();
+	const addItemToChat = useCallback((msg, isMine = true) => {
+		if (!isMine && msg.type === 'image') {
+			msg.blob = new Blob([msg.blob], { type: msg.mime });
+		}
+		msg.isMine = isMine;
+		if (msg.timestamp == null) msg.timestamp = Date.now();
 
-			setMsgs((prev) => {
-				const next = [...prev];
-				msg.id = next.length;
-				next.push(msg);
-				return next;
-			});
-		},
-		[]
-	);
+		setMsgs((prev) => {
+			const next = [...prev];
+			msg.id = next.length;
+			next.push(msg);
+			return next;
+		});
+	}, []);
 
 	useEffect(() => {
 		if (inputBoxRef.current) inputBoxRef.current.focus();
 
 		const sock =
-			process.env.NODE_ENV === "development"
-				? io("http://localhost:7500")
+			process.env.NODE_ENV === 'development'
+				? io('http://localhost:7500')
 				: io();
 
-		sock.on("connect", () => {
+		sock.on('connect', () => {
 			setIsOnline(true);
-			toast.success("Connected to server!");
+			toast.success('Connected to server!');
 		});
-		sock.on("disconnect", () => {
+		sock.on('disconnect', () => {
 			setIsOnline(false);
-			toast.error("Disconnected from server");
+			toast.error('Disconnected from server');
 			// Clean up any in-progress file receives
 			for (const fileId of Object.keys(pendingFilesRef.current)) {
 				const pending = pendingFilesRef.current[fileId];
 				clearTimeout(pending.timer);
-				updateFileMsg(fileId, { status: "failed" });
+				updateFileMsg(fileId, { status: 'failed' });
 				delete pendingFilesRef.current[fileId];
 			}
 		});
 
-		sock.on("msg-client", (msg) => {
+		sock.on('msg-client', (msg) => {
 			if (msg.id !== clientIdRef.current) addItemToChat(msg, false);
 		});
 
@@ -94,12 +93,12 @@ const Chat = ({ setIsOnline = () => {} }) => {
 			if (!pending) return;
 			clearTimeout(pending.timer);
 			pending.timer = setTimeout(() => {
-				updateFileMsg(fileId, { status: "failed" });
+				updateFileMsg(fileId, { status: 'failed' });
 				delete pendingFilesRef.current[fileId];
 			}, FILE_RECEIVE_TIMEOUT);
 		};
 
-		sock.on("file-start-client", (data) => {
+		sock.on('file-start-client', (data) => {
 			const totalChunks = data.totalChunks;
 			if (
 				!Number.isInteger(totalChunks) ||
@@ -118,24 +117,25 @@ const Chat = ({ setIsOnline = () => {} }) => {
 			resetReceiveTimeout(data.fileId);
 			addItemToChat(
 				{
-					type: "file",
+					type: 'file',
 					fileId: data.fileId,
 					fileName: data.fileName,
 					fileSize: data.fileSize,
 					mime: data.mime,
-					status: "receiving",
+					status: 'receiving',
 					progress: 0,
 					blob: null,
 				},
-				false
+				false,
 			);
 		});
 
-		sock.on("file-chunk-client", (data) => {
+		sock.on('file-chunk-client', (data) => {
 			const pending = pendingFilesRef.current[data.fileId];
 			if (!pending) return;
 			const idx = data.chunkIndex;
-			if (!Number.isInteger(idx) || idx < 0 || idx >= pending.totalChunks) return;
+			if (!Number.isInteger(idx) || idx < 0 || idx >= pending.totalChunks)
+				return;
 			if (pending.chunks[idx] !== undefined) return; // duplicate
 			pending.chunks[idx] = data.data;
 			pending.receivedCount++;
@@ -144,18 +144,22 @@ const Chat = ({ setIsOnline = () => {} }) => {
 			resetReceiveTimeout(data.fileId);
 		});
 
-		sock.on("file-end-client", (data) => {
+		sock.on('file-end-client', (data) => {
 			const pending = pendingFilesRef.current[data.fileId];
 			if (!pending) return;
 			clearTimeout(pending.timer);
 			const hasHoles = pending.chunks.some((c) => c === undefined);
 			if (hasHoles) {
-				updateFileMsg(data.fileId, { status: "failed" });
+				updateFileMsg(data.fileId, { status: 'failed' });
 			} else {
 				const blob = new Blob(pending.chunks, {
-					type: pending.metadata.mime || "application/octet-stream",
+					type: pending.metadata.mime || 'application/octet-stream',
 				});
-				updateFileMsg(data.fileId, { status: "complete", progress: 1, blob });
+				updateFileMsg(data.fileId, {
+					status: 'complete',
+					progress: 1,
+					blob,
+				});
 			}
 			delete pendingFilesRef.current[data.fileId];
 		});
@@ -163,12 +167,12 @@ const Chat = ({ setIsOnline = () => {} }) => {
 		setSocket(sock);
 
 		return () => {
-			sock.off("connect");
-			sock.off("disconnect");
-			sock.off("msg-client");
-			sock.off("file-start-client");
-			sock.off("file-chunk-client");
-			sock.off("file-end-client");
+			sock.off('connect');
+			sock.off('disconnect');
+			sock.off('msg-client');
+			sock.off('file-start-client');
+			sock.off('file-chunk-client');
+			sock.off('file-end-client');
 			sock.disconnect();
 			// Clear any pending receive timers to avoid post-unmount state updates
 			for (const fileId of Object.keys(pendingFilesRef.current)) {
@@ -185,34 +189,34 @@ const Chat = ({ setIsOnline = () => {} }) => {
 	const sendTxtMsg = useCallback(() => {
 		const text = txtInput.trim();
 		if (!text) return;
-		if (!socket) return toast.error("Could not send message!");
-		const msg = { type: "text", text };
+		if (!socket) return toast.error('Could not send message!');
+		const msg = { type: 'text', text };
 		msg.id = clientIdRef.current;
-		socket.emit("msg-server", msg);
+		socket.emit('msg-server', msg);
 		addItemToChat(msg);
-		setTxtInput("");
+		setTxtInput('');
 		inputBoxRef.current?.focus();
 	}, [txtInput, socket, addItemToChat]);
 
 	const handleEnter = useCallback(
 		(event) => {
-			if (!event.isComposing && event.key === "Enter") sendTxtMsg();
+			if (!event.isComposing && event.key === 'Enter') sendTxtMsg();
 		},
-		[sendTxtMsg]
+		[sendTxtMsg],
 	);
 
 	const resizeFile = (file) => {
-		const ext = file.name.split(".").pop().toLowerCase();
+		const ext = file.name.split('.').pop().toLowerCase();
 		return new Promise((resolve) => {
 			Resizer.imageFileResizer(
 				file,
-				ext === "png" ? 720 : 1080,
-				ext === "png" ? 720 : 1080,
-				ext === "png" ? "PNG" : "JPEG",
+				ext === 'png' ? 720 : 1080,
+				ext === 'png' ? 720 : 1080,
+				ext === 'png' ? 'PNG' : 'JPEG',
 				80,
 				0,
 				(uri) => resolve(uri),
-				"base64"
+				'base64',
 			);
 		});
 	};
@@ -220,32 +224,32 @@ const Chat = ({ setIsOnline = () => {} }) => {
 	const sendImgMsg = async () => {
 		const imgPicker = imgPickerRef.current;
 		if (!socket) {
-			toast.error("Could not send message!");
-			imgPicker.value = "";
+			toast.error('Could not send message!');
+			imgPicker.value = '';
 			inputBoxRef.current?.focus();
 			return;
 		}
 		try {
 			const file = imgPicker.files?.[0];
 			if (!file || file.size === 0) {
-				toast.error("Please select a valid image file.");
+				toast.error('Please select a valid image file.');
 				return;
 			}
-			if (!["image/jpeg", "image/png"].includes(file.type)) {
-				toast.error("Only JPEG and PNG images are supported.");
+			if (!['image/jpeg', 'image/png'].includes(file.type)) {
+				toast.error('Only JPEG and PNG images are supported.');
 				return;
 			}
 			const img = await resizeFile(file);
 			const blob = await fetch(img).then((r) => r.blob());
 
-			const msg = { type: "image", blob, mime: blob.type };
+			const msg = { type: 'image', blob, mime: blob.type };
 			msg.id = clientIdRef.current;
-			socket.emit("msg-server", msg);
+			socket.emit('msg-server', msg);
 			addItemToChat(msg);
 		} catch {
-			toast.error("Could not send image!");
+			toast.error('Could not send image!');
 		} finally {
-			imgPicker.value = "";
+			imgPicker.value = '';
 			inputBoxRef.current?.focus();
 		}
 	};
@@ -253,8 +257,8 @@ const Chat = ({ setIsOnline = () => {} }) => {
 	const sendFileMsg = async () => {
 		const filePicker = filePickerRef.current;
 		if (!socket) {
-			toast.error("Could not send message!");
-			filePicker.value = "";
+			toast.error('Could not send message!');
+			filePicker.value = '';
 			inputBoxRef.current?.focus();
 			return;
 		}
@@ -262,37 +266,40 @@ const Chat = ({ setIsOnline = () => {} }) => {
 		try {
 			const file = filePicker.files?.[0];
 			if (!file || file.size === 0) {
-				toast.error("Please select a valid file.");
+				toast.error('Please select a valid file.');
 				return;
 			}
 			if (file.size > FILE_MAX_SIZE) {
 				toast.error(
-					`File is too large. Maximum size is ${FILE_MAX_SIZE / (1024 * 1024)} MB.`
+					`File is too large. Maximum size is ${FILE_MAX_SIZE / (1024 * 1024)} MB.`,
 				);
 				return;
 			}
 
 			fileId = uuidv4();
 			const totalChunks = Math.ceil(file.size / FILE_CHUNK_SIZE);
-			const mime = file.type || "application/octet-stream";
+			const mime = file.type || 'application/octet-stream';
 
 			// Add placeholder message to chat
 			addItemToChat({
-				type: "file",
+				type: 'file',
 				fileId,
 				fileName: file.name,
 				fileSize: file.size,
 				mime,
-				status: "sending",
+				status: 'sending',
 				progress: 0,
 				blob: null,
 			});
 
 			// Emit file-start and wait for ack
 			await new Promise((resolve, reject) => {
-				let timer = setTimeout(() => reject(new Error("file-start timeout")), 10000);
+				let timer = setTimeout(
+					() => reject(new Error('file-start timeout')),
+					10000,
+				);
 				socket.emit(
-					"file-start",
+					'file-start',
 					{
 						fileId,
 						fileName: file.name,
@@ -304,7 +311,7 @@ const Chat = ({ setIsOnline = () => {} }) => {
 					() => {
 						clearTimeout(timer);
 						resolve();
-					}
+					},
 				);
 			});
 
@@ -315,12 +322,15 @@ const Chat = ({ setIsOnline = () => {} }) => {
 				let settled = false;
 
 				// Safety timeout: 5s per chunk + 30s base as absolute fallback
-				let timer = setTimeout(() => {
-					if (!settled) {
-						settled = true;
-						reject(new Error("File transfer timeout"));
-					}
-				}, totalChunks * 5000 + 30000);
+				let timer = setTimeout(
+					() => {
+						if (!settled) {
+							settled = true;
+							reject(new Error('File transfer timeout'));
+						}
+					},
+					totalChunks * 5000 + 30000,
+				);
 
 				const done = (fn) => {
 					if (settled) return;
@@ -335,25 +345,39 @@ const Chat = ({ setIsOnline = () => {} }) => {
 					const start = chunkIndex * FILE_CHUNK_SIZE;
 					const end = Math.min(start + FILE_CHUNK_SIZE, file.size);
 
-					file.slice(start, end).arrayBuffer().then((data) => {
-						if (settled) return;
-						socket.emit("file-chunk", { fileId, chunkIndex, data }, () => {
+					file.slice(start, end)
+						.arrayBuffer()
+						.then((data) => {
 							if (settled) return;
-							ackedCount++;
-							updateFileMsg(fileId, { progress: ackedCount / totalChunks });
-							if (ackedCount === totalChunks) {
-								done(resolve);
-							} else {
-								sendNextChunk();
-							}
+							socket.emit(
+								'file-chunk',
+								{ fileId, chunkIndex, data },
+								() => {
+									if (settled) return;
+									ackedCount++;
+									updateFileMsg(fileId, {
+										progress: ackedCount / totalChunks,
+									});
+									if (ackedCount === totalChunks) {
+										done(resolve);
+									} else {
+										sendNextChunk();
+									}
+								},
+							);
+						})
+						.catch(() => {
+							done(() =>
+								reject(new Error('Failed to read file chunk')),
+							);
 						});
-					}).catch(() => {
-						done(() => reject(new Error("Failed to read file chunk")));
-					});
 				};
 
 				// Launch initial batch
-				const initialBatch = Math.min(FILE_MAX_PARALLEL_CHUNKS, totalChunks);
+				const initialBatch = Math.min(
+					FILE_MAX_PARALLEL_CHUNKS,
+					totalChunks,
+				);
 				for (let i = 0; i < initialBatch; i++) {
 					sendNextChunk();
 				}
@@ -361,80 +385,92 @@ const Chat = ({ setIsOnline = () => {} }) => {
 
 			// Emit file-end and wait for ack with timeout
 			await new Promise((resolve, reject) => {
-				let timer = setTimeout(() => reject(new Error("file-end timeout")), 10000);
-				socket.emit("file-end", { fileId }, () => {
+				let timer = setTimeout(
+					() => reject(new Error('file-end timeout')),
+					10000,
+				);
+				socket.emit('file-end', { fileId }, () => {
 					clearTimeout(timer);
 					resolve();
 				});
 			});
 
 			// Mark complete with the original file as blob
-			updateFileMsg(fileId, { status: "complete", progress: 1, blob: file });
+			updateFileMsg(fileId, {
+				status: 'complete',
+				progress: 1,
+				blob: file,
+			});
 		} catch (err) {
-			toast.error("Could not send file!");
+			toast.error('Could not send file!');
 			if (fileId) {
-				updateFileMsg(fileId, { status: "failed" });
+				updateFileMsg(fileId, { status: 'failed' });
 			}
 		} finally {
-			filePicker.value = "";
+			filePicker.value = '';
 			inputBoxRef.current?.focus();
 		}
 	};
 
 	return (
-		<div className="flex flex-col flex-1 overflow-hidden bg-slate-100">
+		<div className='flex flex-col flex-1 overflow-hidden bg-slate-100'>
 			{/* Message feed */}
 			<div
-				className="flex-1 overflow-y-auto px-4 py-4 space-y-1 chat-scroll"
+				className='flex-1 overflow-y-auto px-4 py-4 space-y-1 chat-scroll'
 				ref={chatBoxRef}
 			>
 				{msgs.length === 0 && (
-					<div className="flex flex-col items-center justify-center h-full gap-2 text-slate-400 select-none">
-						<span className="text-4xl">💬</span>
-						<span className="text-sm font-medium">Send a message to get started</span>
+					<div className='flex flex-col items-center justify-center h-full gap-2 text-slate-400 select-none'>
+						<span className='text-4xl'>💬</span>
+						<span className='text-sm font-medium'>
+							Send a message to get started
+						</span>
 					</div>
 				)}
 				{msgs.map((item) => (
-					<MsgItem item={item} key={item.type === "file" ? item.fileId : item.id} />
+					<MsgItem
+						item={item}
+						key={item.type === 'file' ? item.fileId : item.id}
+					/>
 				))}
 			</div>
 
 			{/* Input bar */}
-			<div className="flex items-center gap-2 px-3 py-2.5 bg-white border-t border-slate-200 shadow-sm">
+			<div className='flex items-center gap-2 px-3 py-2.5 bg-white border-t border-slate-200 shadow-sm'>
 				<input
-					type="file"
-					style={{ display: "none" }}
-					accept="image/jpeg,image/png"
+					type='file'
+					style={{ display: 'none' }}
+					accept='image/jpeg,image/png'
 					ref={imgPickerRef}
 					onChange={sendImgMsg}
 				/>
 				<input
-					type="file"
-					style={{ display: "none" }}
+					type='file'
+					style={{ display: 'none' }}
 					ref={filePickerRef}
 					onChange={sendFileMsg}
 				/>
 				<button
-					type="button"
+					type='button'
 					onClick={() => imgPickerRef.current?.click()}
-					className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 transition flex-shrink-0"
-					title="Send image"
+					className='w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 transition flex-shrink-0'
+					title='Send image'
 				>
-					<ImageIcon className="w-5 h-5" />
+					<ImageIcon className='w-5 h-5' />
 				</button>
 				<button
-					type="button"
+					type='button'
 					onClick={() => filePickerRef.current?.click()}
-					className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 transition flex-shrink-0"
-					title="Send file"
+					className='w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 transition flex-shrink-0'
+					title='Send file'
 				>
-					<AttachIcon className="w-5 h-5" />
+					<AttachIcon className='w-5 h-5' />
 				</button>
 
 				<input
-					type="text"
-					className="flex-1 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition"
-					placeholder="Type a message..."
+					type='text'
+					className='flex-1 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition'
+					placeholder='Type a message...'
 					ref={inputBoxRef}
 					onChange={(e) => setTxtInput(e.target.value)}
 					onKeyDown={handleEnter}
@@ -442,12 +478,12 @@ const Chat = ({ setIsOnline = () => {} }) => {
 				/>
 
 				<button
-					type="button"
+					type='button'
 					onClick={sendTxtMsg}
-					className="w-9 h-9 rounded-full bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 flex items-center justify-center transition flex-shrink-0 shadow-sm"
-					title="Send"
+					className='w-9 h-9 rounded-full bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 flex items-center justify-center transition flex-shrink-0 shadow-sm'
+					title='Send'
 				>
-					<img src="send_btn.svg" alt="Send" className="w-4 h-4" />
+					<img src='send_btn.svg' alt='Send' className='w-4 h-4' />
 				</button>
 			</div>
 		</div>
