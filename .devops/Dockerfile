@@ -10,11 +10,10 @@ RUN yarn build
 FROM node:18-alpine
 WORKDIR /app
 ENV NODE_ENV=production
-COPY package.json yarn.lock ./
+COPY --chown=node:node package.json yarn.lock ./
 RUN yarn install --frozen-lockfile --production
-COPY server/ ./server/
-COPY --from=builder /app/build ./build
-RUN chown -R node:node /app
+COPY --chown=node:node server/ ./server/
+COPY --chown=node:node --from=builder /app/build ./build
 USER node
 EXPOSE 7500
 CMD ["node", "./server/app"]
