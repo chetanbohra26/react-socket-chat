@@ -73,17 +73,6 @@ const MsgItem = ({ item }) => {
 	const filename = `image-${item.id}.${ext}`;
 
 	const handleDownload = () => {
-		if (navigator.canShare) {
-			const file = new File([item.blob], filename, {
-				type: item.blob.type,
-			});
-			if (navigator.canShare({ files: [file] })) {
-				navigator.share({ files: [file] }).catch((err) => {
-					if (err.name !== 'AbortError') fallbackDownload();
-				});
-				return;
-			}
-		}
 		fallbackDownload();
 	};
 
