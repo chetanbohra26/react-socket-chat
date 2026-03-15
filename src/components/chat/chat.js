@@ -8,7 +8,7 @@ import Resizer from 'react-image-file-resizer';
 import MsgItem from '../msgItem/msgItem';
 import { ImageIcon, AttachIcon } from '../../assets/icons';
 
-const FILE_CHUNK_SIZE = 64 * 1024; // 64KB per chunk
+const FILE_CHUNK_SIZE = 256 * 1024; // 256KB per chunk
 const FILE_MAX_PARALLEL_CHUNKS = 20; // Send up to 20 chunks concurrently
 const FILE_MAX_SIZE = 5120 * 1024 * 1024; // 5GB max file size
 const FILE_RECEIVE_TIMEOUT = 30000; // 30s inactivity timeout for receiving files
