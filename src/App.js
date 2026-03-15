@@ -10,7 +10,7 @@ import 'react-toastify/dist/ReactToastify.min.css';
 const App = () => {
 	const [isOnline, setIsOnline] = useState(false);
 	const [isDark, setIsDark] = useState(
-		() => localStorage.getItem('theme') === 'dark',
+		() => localStorage.getItem('theme') !== 'light',
 	);
 
 	useEffect(() => {
