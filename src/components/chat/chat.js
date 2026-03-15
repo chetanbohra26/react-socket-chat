@@ -10,7 +10,7 @@ import { ImageIcon, AttachIcon } from '../../assets/icons';
 
 const FILE_CHUNK_SIZE = 64 * 1024; // 64KB per chunk
 const FILE_MAX_PARALLEL_CHUNKS = 20; // Send up to 20 chunks concurrently
-const FILE_MAX_SIZE = 500 * 1024 * 1024; // 500MB max file size
+const FILE_MAX_SIZE = 5120 * 1024 * 1024; // 500MB max file size
 const FILE_RECEIVE_TIMEOUT = 30000; // 30s inactivity timeout for receiving files
 const FILE_MAX_CHUNKS = Math.ceil(FILE_MAX_SIZE / FILE_CHUNK_SIZE); // Max chunks based on max file size
 
@@ -453,6 +453,11 @@ const Chat = ({ setIsOnline = () => {} }) => {
 						key={item.type === 'file' ? item.fileId : item.id}
 					/>
 				))}
+			</div>
+
+			{/* Disclaimer */}
+			<div className='text-center text-xs text-slate-400 dark:text-slate-500 py-1 select-none'>
+				Chat is not saved — refresh the page to clear messages.
 			</div>
 
 			{/* Input bar */}
