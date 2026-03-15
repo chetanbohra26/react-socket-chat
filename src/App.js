@@ -18,7 +18,7 @@ const App = () => {
 	}, [isDark]);
 
 	return (
-		<div className={`flex flex-col h-screen bg-slate-100 dark:bg-slate-900${isDark ? ' dark' : ''}`}>
+		<div className={`flex flex-col h-screen bg-slate-100 dark:bg-slate-900 ${isDark ? 'dark' : ''}`}>
 			<ToastContainer
 				position='top-right'
 				autoClose={3000}

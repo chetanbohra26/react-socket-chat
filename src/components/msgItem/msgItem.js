@@ -188,7 +188,7 @@ const MsgItem = ({ item }) => {
 								className={`text-xs ${
 									isMine
 										? 'text-indigo-200'
-										: 'text-slate-400 dark:text-slate-400'
+										: 'text-slate-400'
 								}`}
 							>
 								{formatSize(item.fileSize)}
@@ -223,7 +223,7 @@ const MsgItem = ({ item }) => {
 										className={`text-[0.625rem] mt-0.5 block ${
 											isMine
 												? 'text-indigo-200'
-												: 'text-slate-400 dark:text-slate-400'
+												: 'text-slate-400'
 										}`}
 									>
 										{item.status === 'sending'

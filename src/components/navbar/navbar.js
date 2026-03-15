@@ -25,6 +25,7 @@ const Navbar = ({ isOnline, isDark, onToggle }) => {
 					onClick={onToggle}
 					className='w-8 h-8 rounded-full bg-white/25 hover:bg-white/40 flex items-center justify-center transition text-base'
 					title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+					aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
 				>
 					{isDark ? '☀️' : '🌙'}
 				</button>
