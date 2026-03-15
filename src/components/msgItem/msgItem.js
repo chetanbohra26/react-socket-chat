@@ -220,7 +220,7 @@ const MsgItem = ({ item }) => {
 										}`}
 									>
 										<div
-											className={`h-full rounded-full transition-all duration-200 ${
+											className={`h-full rounded-full ${
 												isMine
 													? 'bg-white'
 													: 'bg-indigo-500'

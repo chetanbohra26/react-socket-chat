@@ -9,7 +9,7 @@ import MsgItem from '../msgItem/msgItem';
 import { ImageIcon, AttachIcon } from '../../assets/icons';
 
 const FILE_CHUNK_SIZE = 64 * 1024; // 64KB per chunk
-const FILE_MAX_PARALLEL_CHUNKS = 4; // Send up to 4 chunks concurrently
+const FILE_MAX_PARALLEL_CHUNKS = 20; // Send up to 20 chunks concurrently
 const FILE_MAX_SIZE = 500 * 1024 * 1024; // 500MB max file size
 const FILE_RECEIVE_TIMEOUT = 30000; // 30s inactivity timeout for receiving files
 const FILE_MAX_CHUNKS = Math.ceil(FILE_MAX_SIZE / FILE_CHUNK_SIZE); // Max chunks based on max file size
@@ -156,7 +156,8 @@ const Chat = ({ setIsOnline = () => {} }) => {
 			pending.chunks[idx] = data.data;
 			pending.receivedCount++;
 			pending.accumulatedBytes += chunkSize;
-			const progress = pending.receivedCount / pending.totalChunks;
+			const progress =
+				pending.accumulatedBytes / pending.metadata.fileSize;
 			updateFileMsg(data.fileId, { progress });
 			resetReceiveTimeout(data.fileId);
 		});
@@ -336,6 +337,7 @@ const Chat = ({ setIsOnline = () => {} }) => {
 			await new Promise((resolve, reject) => {
 				let nextChunkToSend = 0;
 				let ackedCount = 0;
+				let ackedBytes = 0;
 				let settled = false;
 
 				// Safety timeout: 5s per chunk + 30s base as absolute fallback
@@ -372,8 +374,9 @@ const Chat = ({ setIsOnline = () => {} }) => {
 								() => {
 									if (settled) return;
 									ackedCount++;
+									ackedBytes += end - start;
 									updateFileMsg(fileId, {
-										progress: ackedCount / totalChunks,
+										progress: ackedBytes / file.size,
 									});
 									if (ackedCount === totalChunks) {
 										done(resolve);
