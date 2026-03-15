@@ -78,9 +78,9 @@ const MsgItem = ({ item }) => {
 				type: item.blob.type,
 			});
 			if (navigator.canShare({ files: [file] })) {
-				navigator
-					.share({ files: [file] })
-					.catch(() => fallbackDownload());
+				navigator.share({ files: [file] }).catch((err) => {
+					if (err.name !== 'AbortError') fallbackDownload();
+				});
 				return;
 			}
 		}

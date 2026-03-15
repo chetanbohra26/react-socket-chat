@@ -107,9 +107,18 @@ const Chat = ({ setIsOnline = () => {} }) => {
 			) {
 				return;
 			}
+			if (
+				data.fileSize == null ||
+				!Number.isFinite(data.fileSize) ||
+				data.fileSize <= 0 ||
+				data.fileSize > FILE_MAX_SIZE
+			) {
+				return;
+			}
 			pendingFilesRef.current[data.fileId] = {
 				chunks: new Array(totalChunks),
 				receivedCount: 0,
+				accumulatedBytes: 0,
 				totalChunks,
 				metadata: data,
 				timer: null,
@@ -137,8 +146,16 @@ const Chat = ({ setIsOnline = () => {} }) => {
 			if (!Number.isInteger(idx) || idx < 0 || idx >= pending.totalChunks)
 				return;
 			if (pending.chunks[idx] !== undefined) return; // duplicate
+			const chunkSize = data.data?.byteLength ?? data.data?.length ?? 0;
+			if (pending.accumulatedBytes + chunkSize > FILE_MAX_SIZE) {
+				clearTimeout(pending.timer);
+				delete pendingFilesRef.current[data.fileId];
+				updateFileMsg(data.fileId, { status: 'failed' });
+				return;
+			}
 			pending.chunks[idx] = data.data;
 			pending.receivedCount++;
+			pending.accumulatedBytes += chunkSize;
 			const progress = pending.receivedCount / pending.totalChunks;
 			updateFileMsg(data.fileId, { progress });
 			resetReceiveTimeout(data.fileId);
