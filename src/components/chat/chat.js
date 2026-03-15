@@ -10,7 +10,7 @@ import { ImageIcon, AttachIcon } from '../../assets/icons';
 
 const FILE_CHUNK_SIZE = 64 * 1024; // 64KB per chunk
 const FILE_MAX_PARALLEL_CHUNKS = 20; // Send up to 20 chunks concurrently
-const FILE_MAX_SIZE = 5120 * 1024 * 1024; // 500MB max file size
+const FILE_MAX_SIZE = 5120 * 1024 * 1024; // 5GB max file size
 const FILE_RECEIVE_TIMEOUT = 30000; // 30s inactivity timeout for receiving files
 const FILE_MAX_CHUNKS = Math.ceil(FILE_MAX_SIZE / FILE_CHUNK_SIZE); // Max chunks based on max file size
 
@@ -18,6 +18,7 @@ const Chat = ({ setIsOnline = () => {} }) => {
 	const [txtInput, setTxtInput] = useState('');
 	const [msgs, setMsgs] = useState([]);
 	const [socket, setSocket] = useState(null);
+	const [isDragging, setIsDragging] = useState(false);
 
 	const clientIdRef = useRef(uuidv4());
 	const imgPickerRef = useRef(null);
@@ -25,6 +26,7 @@ const Chat = ({ setIsOnline = () => {} }) => {
 	const chatBoxRef = useRef(null);
 	const inputBoxRef = useRef(null);
 	const pendingFilesRef = useRef({});
+	const dragCounterRef = useRef(0);
 
 	const scrollToBottom = useCallback(() => {
 		const chatBox = chatBoxRef.current;
@@ -272,17 +274,17 @@ const Chat = ({ setIsOnline = () => {} }) => {
 		}
 	};
 
-	const sendFileMsg = async () => {
+	const sendFileMsg = async (droppedFile = null) => {
 		const filePicker = filePickerRef.current;
 		if (!socket) {
 			toast.error('Could not send message!');
-			filePicker.value = '';
+			if (!droppedFile) filePicker.value = '';
 			inputBoxRef.current?.focus();
 			return;
 		}
 		let fileId = null;
 		try {
-			const file = filePicker.files?.[0];
+			const file = droppedFile ?? filePicker.files?.[0];
 			if (!file || file.size === 0) {
 				toast.error('Please select a valid file.');
 				return;
@@ -427,13 +429,25 @@ const Chat = ({ setIsOnline = () => {} }) => {
 				updateFileMsg(fileId, { status: 'failed' });
 			}
 		} finally {
-			filePicker.value = '';
+			if (!droppedFile) filePicker.value = '';
 			inputBoxRef.current?.focus();
 		}
 	};
 
 	return (
-		<div className='flex flex-col flex-1 overflow-hidden bg-slate-100 dark:bg-slate-900'>
+		<div
+			className='relative flex flex-col flex-1 overflow-hidden bg-slate-100 dark:bg-slate-900'
+			onDragEnter={(e) => { e.preventDefault(); dragCounterRef.current++; setIsDragging(true); }}
+			onDragLeave={(e) => { e.preventDefault(); if (--dragCounterRef.current === 0) setIsDragging(false); }}
+			onDragOver={(e) => e.preventDefault()}
+			onDrop={(e) => { e.preventDefault(); dragCounterRef.current = 0; setIsDragging(false); const file = e.dataTransfer.files?.[0]; if (file) sendFileMsg(file); }}
+		>
+			{isDragging && (
+				<div className='absolute inset-0 z-10 flex items-center justify-center bg-indigo-500/20 border-2 border-dashed border-indigo-400 rounded-lg pointer-events-none'>
+					<span className='text-indigo-400 font-semibold text-lg'>Drop to send file</span>
+				</div>
+			)}
+
 			{/* Message feed */}
 			<div
 				className='flex-1 overflow-y-auto px-4 py-4 space-y-1 chat-scroll'
