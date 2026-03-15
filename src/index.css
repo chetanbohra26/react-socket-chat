@@ -14,6 +14,11 @@
   border-radius: 9999px;
 }
 
+/* Dark mode scrollbar */
+.dark .chat-scroll::-webkit-scrollbar-thumb {
+  background: #4f46e5;
+}
+
 /* Status dot pulse animation */
 @keyframes status-pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
