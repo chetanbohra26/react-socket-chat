@@ -438,7 +438,7 @@ const Chat = ({ setIsOnline = () => {} }) => {
 		<div
 			className='relative flex flex-col flex-1 overflow-hidden bg-slate-100 dark:bg-slate-900'
 			onDragEnter={(e) => { e.preventDefault(); dragCounterRef.current++; setIsDragging(true); }}
-			onDragLeave={(e) => { e.preventDefault(); if (--dragCounterRef.current === 0) setIsDragging(false); }}
+			onDragLeave={(e) => { e.preventDefault(); dragCounterRef.current = Math.max(0, dragCounterRef.current - 1); if (dragCounterRef.current === 0) setIsDragging(false); }}
 			onDragOver={(e) => e.preventDefault()}
 			onDrop={(e) => { e.preventDefault(); dragCounterRef.current = 0; setIsDragging(false); const file = e.dataTransfer.files?.[0]; if (file) sendFileMsg(file); }}
 		>
