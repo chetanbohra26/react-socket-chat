@@ -9,9 +9,12 @@ import 'react-toastify/dist/ReactToastify.min.css';
 
 const App = () => {
 	const [isOnline, setIsOnline] = useState(false);
-	const [isDark, setIsDark] = useState(
-		() => localStorage.getItem('theme') !== 'light',
-	);
+	const [isDark, setIsDark] = useState(() => {
+		const stored = localStorage.getItem('theme');
+		if (stored === 'light') return false;
+		if (stored === 'dark') return true;
+		return window.matchMedia('(prefers-color-scheme: dark)').matches;
+	});
 
 	useEffect(() => {
 		localStorage.setItem('theme', isDark ? 'dark' : 'light');
