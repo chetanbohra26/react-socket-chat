@@ -1,0 +1,8 @@
+services:
+  app:
+    image: chetanbohra26/react-socket-chat:latest
+    ports:
+      - "7500:7500"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
